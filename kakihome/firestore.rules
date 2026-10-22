@@ -1,0 +1,62 @@
+rules_version = '2';
+// Kaki Home households. Only Google accounts listed in a household's members can read or change it.
+// Deployed on merge to main by .github/workflows/deploy-firestore-rules.yml. Tests: test/run-sync.sh (local emulators).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function email() { return request.auth.token.email.lower(); }
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function member(hid) {
+      return signedIn() && email() in get(/databases/$(database)/documents/households/$(hid)).data.members;
+    }
+
+    match /households/{hid} {
+      allow read: if signedIn() && email() in resource.data.members;
+      // start a household: you are its owner and only member
+      allow create: if signedIn()
+        && request.resource.data.owner == email()
+        && request.resource.data.members == [email()]
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'members', 'createdAt']);
+      // members may add or remove family, rename it; the owner stays and stays a member
+      allow update: if signedIn() && email() in resource.data.members
+        && request.resource.data.owner == resource.data.owner
+        && resource.data.owner in request.resource.data.members
+        && request.resource.data.members is list && request.resource.data.members.size() <= 20
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'members', 'createdAt']);
+      allow delete: if signedIn() && email() == resource.data.owner;
+
+      // reading and deleting: every kind; writing items and photos has size limits (below)
+      match /{kind}/{id} {
+        allow read, delete: if kind in ['items', 'events', 'shop', 'photos'] && member(hid);
+        allow create, update: if kind in ['events', 'shop'] && member(hid);
+      }
+      // An item carries only a small thumbnail (`thumb`, at most 12 KB); its photo is in photos/{id}. Items from
+      // before 16 Oct 2026 may still hold a whole photo as `photo`: it may stay as it was or be removed (moved to
+      // photos/{id}), but no item may gain or change one (an empty `photo`, from older app versions, is fine).
+      match /items/{id} {
+        allow create, update: if member(hid)
+          && request.resource.data.get('thumb', '') is string
+          && request.resource.data.get('thumb', '').size() <= 12288
+          && (request.resource.data.get('photo', '') == ''
+            || (resource != null && request.resource.data.photo == resource.data.get('photo', null)));
+      }
+      // One photo per item (same id), at most 150 KB, read only when the item is opened.
+      match /photos/{id} {
+        allow create, update: if member(hid)
+          && request.resource.data.keys().hasOnly(['id', 'data', 'updatedAt'])
+          && request.resource.data.data is string
+          && request.resource.data.data.size() <= 153600;
+      }
+      // shared settings: only the 'people' document (names members give each other, by email), kept small. Each name
+      // is trimmed to 40 characters by the app; rules can't loop over a map, so they cap the count instead.
+      match /settings/{id} {
+        // read as a collection (the app listens to all of settings), so no id check here; writes allow only 'people'
+        allow read: if member(hid);
+        allow delete: if member(hid) && id == 'people';
+        allow create, update: if member(hid) && id == 'people'
+          && request.resource.data.keys().hasOnly(['id', 'names', 'updatedAt'])
+          && request.resource.data.id == 'people'
+          && request.resource.data.names is map && request.resource.data.names.size() <= 20;
+      }
+    }
+  }
+}
