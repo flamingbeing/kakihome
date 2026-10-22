@@ -1,0 +1,105 @@
+/* Kaki Home: the app's own content styles, on top of the home app kit (https://design.flamingbeing.com/v1/app.css, DESIGN-APP.md).
+   Every class starts with kh-. Only tokens from https://design.flamingbeing.com/v1/tokens.css; no new colours. */
+
+.kh-wrap{white-space:normal;overflow-wrap:anywhere;text-align:right}
+
+/* a problem worth seeing (sync failed) */
+.kh-alert{display:flex;gap:var(--home-s2);align-items:flex-start;margin:0 0 var(--home-s4);background:var(--home-bad-bg);color:var(--home-bad)}
+.kh-alert .ha-icon{flex:none;width:20px;height:20px}
+
+/* item screen */
+.kh-hero{display:block;width:100%;max-height:240px;margin:0 0 var(--home-s5);border-radius:var(--home-r-lg);object-fit:cover;background:var(--home-fill)}
+.kh-batch{row-gap:var(--home-s2)}
+.kh-batch-acts{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:var(--home-s2);margin:2px 0 4px}
+.kh-batch-acts .ha-btn--quiet{background:var(--home-fill);color:var(--home-ink-2)}
+.kh-actions{margin:calc(-1 * var(--home-s2)) 0 var(--home-s6)}
+.kh-cols-label{margin:var(--home-s4) 0 var(--home-s2);color:var(--home-muted);font-size:var(--home-t-small)}
+.kh-cols{height:120px}
+.kh-delete{margin:var(--home-s2) 0 0}
+
+/* add and edit */
+.kh-finder .ha-search{margin-bottom:var(--home-s2)}
+.kh-finder #kh-sugg{margin:0 0 var(--home-s2)}
+.kh-finder .ha-btn-row{margin:var(--home-s2) 0 0}
+.kh-finder .ha-btn-row>.ha-btn{flex:0 1 auto}
+.kh-photo-row{display:flex;gap:var(--home-s3);align-items:flex-start}
+.kh-photo-fields{flex:1;min-width:0}
+.kh-photo{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:88px;height:88px;
+  margin-top:26px;border-radius:var(--home-r-md);background:var(--home-surface);box-shadow:inset 0 0 0 1px var(--home-control);
+  color:var(--home-accent);font-size:var(--home-t-label);font-weight:600;text-align:center;line-height:1.2;overflow:hidden;cursor:pointer}
+.kh-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.kh-photo img+span{position:absolute;left:0;right:0;bottom:0;padding:3px 2px;background:var(--home-toast);color:var(--home-on-toast)}
+.kh-photo:active{background:var(--home-pressed)}
+.kh-photo:focus-within{outline:2px solid var(--home-focus);outline-offset:2px}
+.kh-photo-del{margin:calc(-1 * var(--home-s2)) 0 var(--home-s2)}
+.kh-file{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+.kh-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9em),1fr));column-gap:var(--home-s3)}
+.kh-gap{margin-top:var(--home-s4);margin-bottom:var(--home-s2)}
+.kh-dates{margin-top:0}
+label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outline-offset:-3px;border-radius:var(--home-r-lg)}
+
+/* a one-line form: shopping list, family member */
+.kh-addline{display:flex;gap:var(--home-s2);align-items:center;margin:0 0 var(--home-s5)}
+.kh-addline .ha-input{flex:1;min-width:0;min-height:44px;padding-block:8px}
+.kh-addline .ha-btn{flex:none}
+.kh-member{margin:var(--home-s3) 0 0}
+
+/* the barcode scanner sheet */
+.kh-scan{overflow:hidden;border-radius:var(--home-r-md);background:var(--home-ink);aspect-ratio:4/3}
+.kh-scan video{display:block;width:100%;height:100%;object-fit:cover}
+.kh-scan-msg{margin:var(--home-s3) 0;color:var(--home-ink-2)}
+.kh-file-btn{position:relative}
+.kh-file-btn:focus-within{outline:2px solid var(--home-focus);outline-offset:2px}
+.kh-install .ha-card-text+.ha-card-text{margin-top:var(--home-s2)}
+
+/* home and lists: the three numbers stay in one row; a name keeps its words whole (the badge moves under it first) */
+.kh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kh-goal .ha-card-title{font-size:var(--home-t-title1);font-variant-numeric:tabular-nums}
+.kh-quick-text{width:100%;min-height:6.5em;resize:vertical}
+.kh-mic.is-on{background:var(--home-bad);color:#fff}
+.kh-item .ha-row-body{flex-basis:8em}
+.kh-item .ha-row-title{overflow-wrap:break-word}
+
+/* the welcome sheet (js/guide.js): an icon, a title and a line, then kit rows; dots and the buttons in the foot */
+.kh-welcome{touch-action:pan-y}
+.kh-wtop{display:flex;flex-direction:column;align-items:center;gap:var(--home-s2);padding:var(--home-s4) var(--home-s2) var(--home-s5);text-align:center}
+.kh-wicon{display:grid;place-items:center;width:64px;height:64px;margin-bottom:var(--home-s2);border-radius:50%;background:var(--home-accent-soft);color:var(--home-accent)}
+.kh-wicon .ha-icon{width:30px;height:30px}
+.kh-wtitle{margin:0;font-size:var(--home-t-title2);font-weight:700;line-height:1.25;letter-spacing:-.012em}
+.kh-wtitle:focus{outline:none}
+.kh-wtitle:focus-visible{outline:2px solid var(--home-focus);outline-offset:2px;border-radius:var(--home-r-xs)}
+.kh-wtext{margin:0;max-width:32ch;color:var(--home-muted);font-size:var(--home-t-small);line-height:1.5}
+.kh-dots{display:flex;justify-content:center;gap:6px;margin:0 0 var(--home-s3)}
+.kh-dot{width:7px;height:7px;border-radius:var(--home-r-full);background:var(--home-line-strong);transition:width var(--home-d-med) var(--home-ease),background-color var(--home-d-fast) linear}
+.kh-dot.is-current{width:20px;background:var(--home-accent)}
+.kh-wbtns{margin:0}
+
+/* the guide screen */
+.kh-gagain{margin:var(--home-s2) 0 var(--home-s6)}
+.kh-stat{color:inherit;text-decoration:none}
+.kh-stat .ha-stat-value{color:var(--home-accent)}
+/* first steps (js/tour.js): the Getting started checklist, the quick start chips, and the Show me ring */
+.kh-tour-mark{flex:none;display:grid;place-items:center;width:26px;height:26px;border:2px solid var(--home-line-strong);border-radius:50%;color:#fff}
+.kh-tour-row.is-done .kh-tour-mark{border-color:var(--home-ok);background:var(--home-ok)}
+.kh-tour-mark .ha-icon{width:16px;height:16px}
+.kh-tour-row.is-done .ha-row-title{color:var(--home-muted);text-decoration:line-through}
+.kh-tour-foot{margin:var(--home-s1) 0 0;text-align:right}
+.kh-start-intro{margin:0 0 var(--home-s3)}
+.kh-start-chips .ha-chip[disabled]{opacity:.6}
+.kh-spot{outline:3px solid var(--home-accent);outline-offset:3px;animation:kh-spot 1.2s ease-in-out 3}
+@keyframes kh-spot{50%{outline-offset:7px}}
+@media (prefers-reduced-motion:reduce){.kh-spot{animation:none}}
+.kh-break{white-space:normal;overflow-wrap:anywhere}
+.kh-person-form{margin:var(--home-s4) 0}
+.kh-person-acts{margin-top:var(--home-s3)}
+
+/* sign in by email: the quiet link under Continue with Google, and the email sheet */
+.kh-quiet{margin:var(--home-s2) 0 0;text-align:center}
+.kh-em-second{margin-top:var(--home-s3)}
+.kh-em-hint{padding:0;margin:calc(var(--home-s2) * -1) 0 var(--home-s4)}
+.kh-em-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--home-s2);margin-top:var(--home-s3)}
+.kh-em-note{display:flex;gap:var(--home-s3);align-items:flex-start;margin:0 0 var(--home-s5)}
+.kh-em-note p{margin:0 0 var(--home-s3);line-height:1.45}
+.kh-em-title{font-weight:600}
+.kh-em-lead{margin:0 0 var(--home-s4);line-height:1.45}
+#kh-em-form .ha-field-error{margin:0 0 var(--home-s3)}
