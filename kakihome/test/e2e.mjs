@@ -404,6 +404,8 @@ try {
     await welcomeSheet(page).locator('[data-kh-w="next"]').click(); await settle(page);
     await welcomeSheet(page).locator('[data-kh-w="start"]').click(); await settle(page);
     const sheet = page.locator('dialog.ha-sheet[open]');
+    // the quick start opens after the welcome closes; on a slow runner that can take longer than settle()
+    await sheet.locator('.kh-start-chips .ha-chip').nth(19).waitFor({ timeout: 5000 }).catch(() => {});
     ok(await sheet.locator('.kh-start-chips .ha-chip').count() >= 20, 'the quick start offers everyday things');
     for (const n of ['Fresh milk', 'Eggs', 'Thai hom mali rice', 'Bathroom tissue']) await sheet.locator('.kh-start-chips .ha-chip', { hasText: n }).first().click();
     ok(await page.locator('#kh-start-go').textContent() === 'Add 4 items', 'the button counts the picks');
