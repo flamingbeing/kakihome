@@ -3,6 +3,7 @@
   "short_name": "Kaki Home",
   "description": "Kaki Home: know what you have, buy what you need, use what you own before it expires.",
   "lang": "en-SG",
+  "id": "./",
   "start_url": "./#/",
   "scope": "./",
   "display": "standalone",
