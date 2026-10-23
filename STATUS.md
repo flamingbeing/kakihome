@@ -3,6 +3,8 @@
 ## Now
 - Moved here from the family home apps repo (22 Oct 2026): own repo, own Worker `kakihome`, deploy from Actions.
   The app's own status: `kakihome/STATUS.md`.
+- 23 Oct 2026: browser and emulator tests are Playwright Test specs (`npx playwright test`, CI job `specs`); details in
+  `kakihome/STATUS.md`.
 
 ## Waiting on the owner
 -

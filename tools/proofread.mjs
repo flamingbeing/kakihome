@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = new Set(process.argv.slice(2));
-const SKIP = /(^|\/)(\.git|node_modules|vendor|test|__|\.claude|\.agents)(\/|$)/;
+const SKIP = /(^|\/)(\.git|node_modules|test-results|playwright-report|vendor|test|__|\.claude|\.agents)(\/|$)/;
 const findings = [];
 const add = (file, msg) => findings.push({ file, msg });
 
