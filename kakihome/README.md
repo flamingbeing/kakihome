@@ -22,7 +22,7 @@ Start with [NOTES.md](NOTES.md) (decisions, how to test); setup is [SETUP.md](SE
 | `config.js`, `auth/firebase/init.json` | The Firebase web config (null until set up: on-phone only); written by `tools/set-config.mjs` |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and the home-screen icon (`tools/icons.mjs` renders the PNGs) |
 | `firestore.rules`, `firebase.json` | Members-only households; deployed on merge by `.github/workflows/deploy-firestore-rules.yml` |
-| `test/` | `logic`, `quick`, `config` (plain node), `e2e.mjs` (phone browser test), `sync.e2e.mjs` + `run-sync.sh` (emulators) |
+| `test/` | `logic`, `quick`, `config` (plain node), `specs/*.spec.mjs` (Playwright Test: phone browser tests and the emulator tests, `npx playwright test`) |
 
 Try it without any account: `<preview>/_sites/kakihome.flamingbeing.com/?demo` (a made-up household, nothing saved),
 or `https://kakihome.flamingbeing.com/?demo` once live.

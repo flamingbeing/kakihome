@@ -37,6 +37,7 @@ pointers like "ask the owner" are fine).
 node tools/check.mjs                 # repo checks + Worker tests
 node tools/stamp-versions.mjs --check
 for f in kakihome/test/*.test.mjs; do node "$f"; done
+npx playwright test                  # browser specs + emulator specs (npm ci first)
 node tools/proofread.mjs             # page and doc mistakes
 ```
 

@@ -74,9 +74,19 @@ node kakihome/test/tour.test.mjs       # first steps: quick-start list, checklis
 node kakihome/test/photo.test.mjs      # photo sizes: the thumbnail and photo limits
 node kakihome/test/merge.test.mjs      # merging duplicate households: who may, members, names
 node kakihome/test/config.test.mjs     # set-config, sign-in choice, plain-word errors, sw.js rules
-node kakihome/test/e2e.mjs             # phone browser test with axe; SHOTS=<dir> saves screenshots
-kakihome/test/run-sync.sh              # household sharing, photos, names, merging, email sign-in and the rules in the local emulators (demo-kakihome)
+npx playwright test                    # the browser specs (below); SHOTS=<dir> saves screenshots
 ```
+
+The browser specs are Playwright Test (`playwright.config.mjs`, `kakihome/test/specs/`): `app` (the phone walk-through,
+split into independent tests), `welcome` (welcome, guide, first steps), `demo` (every screen at 390/360/320 px), `photos`,
+`signin` (email sign-in) and `sync` (household sharing, photos rules, names, merging, offline: the rules in the local
+emulators, project `demo-kakihome`, fake accounts). Run one with `npx playwright test sync`; `PW_NO_EMULATOR=1` skips
+starting the emulators for the specs that don't need them (`app`, `welcome`, `demo`, `photos`).
+Rules for specs: fully parallel, retries 0 (a flake is a bug to fix); every test gets its own static server (a fresh origin)
+and a `uid` that goes in every email and household id it makes, so no test leaves anything another one needs; no fixed
+waits: wait on what the page shows (`expect(...)`, `expect.poll`). Service workers are blocked in `open()` (on a first visit
+the app reloads itself once when its worker claims the page); the one test about the worker allows them. If the emulators
+fail to start, a stray one from an earlier run may still hold port 8085: `pgrep -f '[c]loud-firestore-emulator'`, then kill it.
 
 The "Kaki Home checks" workflow runs them on PRs touching `kakihome/` or `__/`; they load the design kit from its live address. Never point a test at the
 live Firebase project.
