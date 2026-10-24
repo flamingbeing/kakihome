@@ -1,7 +1,7 @@
 # Deploys this repo's Worker on every push to main (and to beta, as the Worker's "beta" environment, if
 # wrangler.jsonc has one). The deploy build stamps the service worker versions first (tools/stamp-versions.mjs).
-# The steps live in the app-devkit kit (deploy-worker.yml). Needs repo secrets CLOUDFLARE_API_TOKEN and
-# CLOUDFLARE_ACCOUNT_ID; without them the run says so and skips.
+# The steps live in the app-devkit kit (deploy-worker.yml), pinned to an exact version; Dependabot opens bump PRs.
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; without them the run says so and skips.
 name: Deploy
 
 on:
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: flamingbeing/app-devkit/.github/workflows/deploy-worker.yml@v1
+    uses: flamingbeing/app-devkit/.github/workflows/deploy-worker.yml@v1.1.0
     with:
       stamp-command: if [ -f tools/stamp-versions.mjs ]; then node tools/stamp-versions.mjs; fi
     secrets: inherit
