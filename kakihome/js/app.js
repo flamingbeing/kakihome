@@ -990,7 +990,7 @@ function draw(r, { keep = false } = {}) {
   else if (name === 'guide') { title = GUIDE; main.innerHTML = viewGuide(); setBar({ title: 'How to use it', lead: backBtn(S.backLabel) }); }
   else if (name === 'settings') {
     main.innerHTML = viewSettings(); setBar({ title });
-    haVersion($('#kh-version'), 'kakihome');
+    showVersion($('#kh-version'));
   }
   document.title = name === 'home' ? 'Kaki Home' : `${title} · Kaki Home`;
   drawBadge();
@@ -1546,25 +1546,24 @@ async function finishEmailLink() {
   openEmailSheet({ confirm: true, onSubmit: attempt }).closed.then(() => { if (used) tidy(); });
 }
 
-// ---- updates: a new version takes over only when nobody is in the middle of something ----------------------------
+// ---- updates: the shared update module (app-update) ----------------------------------------------------------------
+// A new version installs in the background and takes over at once; the page reloads once (register.js). Loaded with
+// import() so a blocked core.anawj.com never stops the app; offline it comes from the saved copy (sw.js SHELL).
 
-const idle = () => !haSheetOpen() && !['add', 'edit'].includes(screen()) && !S.dirty
-  && !(document.activeElement?.matches?.('input, textarea, select') && document.activeElement.value);
-let waiting = null, reloading = false;
-function offerUpdate(w) {
-  waiting = w;
-  if (idle()) { w.postMessage('take-over'); return; }
-  haToast('Update ready', { action: 'Restart', ms: 10000, onAction: () => waiting?.postMessage('take-over') });
+const UPDATE = 'https://core.anawj.com/update/0.1.0/register.js';
+let updates = null;
+function watchUpdates() {
+  updates = import(UPDATE).then(async m => { await m.register({ app: 'kakihome', sw: 'sw.js' }); return m; })
+    .catch(() => null);   // no offline copy (private window) or the module could not load: the app works without it
 }
-function watchUpdates(reg) {
-  if (reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
-  reg.addEventListener('updatefound', () => {
-    const w = reg.installing;
-    w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(w); });
-  });
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
-  // the app went to the background: a good moment to take the update quietly
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && waiting && idle()) waiting.postMessage('take-over'); });
+// Settings: the kit's version line and "Get the latest version", with the line read from the running version
+// (the kit takes the first 'kakihome-' cache, which can be a 'kakihome-rt-' one)
+async function showVersion(el) {
+  await haVersion(el, 'kakihome');
+  const m = await updates, label = String((m && await m.versionLabel().catch(() => '')) || '').replace(/^kakihome-/, '');
+  const text = el?.querySelector('.ha-version-text');
+  if (text && label) { text.textContent = 'App version ' + label; text.hidden = false; }
+  else if (text && /^App version rt-/.test(text.textContent)) text.hidden = true;
 }
 
 // ---- start ----------------------------------------------------------------------------------------------------
@@ -1605,7 +1604,7 @@ async function start() {
     redraw();
   }
   if ('serviceWorker' in navigator && !EMULATOR) {
-    navigator.serviceWorker.register('sw.js').then(watchUpdates).catch(() => { /* no offline copy (private window) */ });
+    watchUpdates();
   }
   window.__kakihome = { ...(window.__kakihome || {}), S };
   setTimeout(maybeWelcome, 300);
