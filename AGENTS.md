@@ -21,7 +21,7 @@ pointers like "ask the owner" are fine).
   change would come as `/v2/`.
 - **Apps stay unlisted:** every page has `<meta name="robots" content="noindex, nofollow">`; never link the app publicly.
 - **Service workers:** `sw.js` has `const VERSION = 'kakihome-v<N>'`; never stamp it by hand (the deploy runs
-  `tools/stamp-versions.mjs`). Change `<N>` only when the worker's own logic changes. Delete only `kakihome-` caches.
+  `tools/stamp-versions.mjs`). Change `<N>` only when the worker's own logic changes. The logic is the shared update module (app-update, exact pin `core.anawj.com/update/<x.y.z>/`): every SHELL file must exist (install is all or nothing).
   The kit's four files are in its `SHELL` list by full address, so the app works offline.
 - **Google sign-in** happens on the app's own address (`authDomain` is `kakihome.flamingbeing.com`; Firebase's helper
   pages in `__/auth/`, `init.json` in `kakihome/auth/firebase/`). Never add `*.workers.dev` previews to Firebase.

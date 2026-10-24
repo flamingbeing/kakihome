@@ -43,12 +43,19 @@ assert.match(explain({ code: 'auth/network-request-failed' }), /No signal/);
 assert.match(explain({ code: 'permission-denied' }), /isn’t in that household/);
 assert.equal(explain({ code: 'auth/internal-error', message: 'INTERNAL ASSERTION FAILED' }, 'Sign-in'), 'Sign-in didn’t work. Try again in a moment.');
 
-// the service worker: plain VERSION, waits to take over, kit files offline
+// the service worker: plain VERSION, on app-update (exact pin), kit files and the page module offline
 const sw = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 assert.match(sw, /const VERSION = 'kakihome-v\d+'/);
-assert.ok(!/addEventListener\('install'[\s\S]*?skipWaiting[\s\S]*?\}\);/.test(sw.split("addEventListener('activate'")[0]), 'no skipWaiting on install');
-assert.match(sw, /'take-over'\) self\.skipWaiting\(\)/);
+assert.match(sw, /^const MANIFEST = \{\};$/m, 'MANIFEST stays empty in git (the deploy fills it)');
+assert.match(sw, /importScripts\('https:\/\/core\.anawj\.com\/update\/\d+\.\d+\.\d+\/sw-core\.js'\)/);
+assert.match(sw, /AppUpdate\.init\(\{\s*app: 'kakihome'/);
+assert.ok(!sw.includes("'index.html'"), 'pages are kept by the folder (./), never index.html');
 for (const f of ['tokens.css', 'app.css', 'app.js', 'icons.svg'].map(f => 'https://design.flamingbeing.com/v1/' + f)) assert.ok(sw.includes(`'${f}'`), f);
+const core = sw.match(/core\.anawj\.com\/update\/(\d+\.\d+\.\d+)\/sw-core/)[1];
+assert.ok(sw.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'register.js of the same version in SHELL');
+const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+assert.ok(app.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'the page loads the same register.js');
+assert.ok(!/take-over|skipWaiting|Update ready/.test(app), 'no update toast or take-over message left');
 console.log('kakihome config: ok');
 
 // which family pantry opens when an account is in more than one: the remembered one, else the one with most people
