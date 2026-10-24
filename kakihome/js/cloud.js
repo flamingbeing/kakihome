@@ -16,7 +16,7 @@
 import { firebaseConfig } from '../config.js';
 import { KINDS, prefs } from './store.js';
 
-const SDK = 'https://www.gstatic.com/firebasejs/10.14.1/';
+const SDK = 'https://www.gstatic.com/firebasejs/12.19.0/';
 export const APP_HOST = 'kakihome.flamingbeing.com';
 
 const emulator = (() => {
