@@ -43,7 +43,7 @@ jobs:
       - uses: flamingbeing/app-devkit/setup-browser@v1.1.0
         with:
           devkit-dir: ''
-      - uses: flamingbeing/app-devkit/setup-emulators@v1.1.0
+      - uses: flamingbeing/app-devkit/setup-emulators@v1.2.0
         with:
           emulators: firestore,auth
       - run: npx playwright test
