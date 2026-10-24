@@ -6,7 +6,7 @@
 // tests run in any order and side by side. Run: npx playwright test sync
 import { test, expect } from './fixtures.mjs';
 
-const FSJS = 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
+const FSJS = 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 const HOME = '2026-10-16T00:00:00.000Z';
 
 // sign in as a made-up Google account, once Auth has settled its first state (a sign-in sent while it is still starting
