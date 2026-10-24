@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: flamingbeing/app-devkit/setup-node@d2-playwright-tools
+      - uses: flamingbeing/app-devkit/setup-node@v1
         with:
           install: 'false'
       - run: node kakihome/test/logic.test.mjs
@@ -39,11 +39,11 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: flamingbeing/app-devkit/setup-node@d2-playwright-tools
-      - uses: flamingbeing/app-devkit/setup-browser@d2-playwright-tools
+      - uses: flamingbeing/app-devkit/setup-node@v1
+      - uses: flamingbeing/app-devkit/setup-browser@v1
         with:
           devkit-dir: ''
-      - uses: flamingbeing/app-devkit/setup-emulators@d2-playwright-tools
+      - uses: flamingbeing/app-devkit/setup-emulators@v1
         with:
           emulators: firestore,auth
       - run: npx playwright test

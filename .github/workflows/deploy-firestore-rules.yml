@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   deploy:
-    uses: flamingbeing/app-devkit/.github/workflows/deploy-rules.yml@d2-playwright-tools
+    uses: flamingbeing/app-devkit/.github/workflows/deploy-rules.yml@v1
     with:
       working-directory: kakihome   # its firebase.json names firestore.rules
       firebase-project: ${{ vars.FIREBASE_PROJECT }}
