@@ -14,7 +14,7 @@
 // (the anawj.com logbook's fix for "missing initial state").
 
 import { firebaseConfig } from '../config.js';
-import { KINDS, prefs } from './store.js';
+import { KINDS, PHOTOS, prefs } from './store.js';
 
 const SDK = 'https://www.gstatic.com/firebasejs/12.19.0/';
 export const APP_HOST = 'kakihome.flamingbeing.com';
@@ -295,16 +295,21 @@ export async function removeHousehold(hid) {
 // in a transaction, one document at a time and in order: nothing waits in the SDK's own offline queue, so a refused save
 // is kept and a save made offline survives a reload. Each kind has a copy on this phone and listens only for documents
 // changed since the last sync (`updatedAt`, stamped by the adapter at commit), so a quiet reopen reads about one document
-// a kind. Saves replace the document as setDoc did (last write wins; there is no conflict screen). A delete writes a
+// a kind. Saves are held conflicts by field (app-sync 0.6.4+, the core's default for every app): different fields merge on
+// their own, the same field changed to the same value is no conflict, and a field changed on both phones to different
+// values holds the save on the phone that sent it second until its person chooses (`onConflicts`, `resolve`; nothing is
+// overwritten without asking). Photos stay last write wins (one blob per item). A delete writes a
 // `bin` entry in the same transaction, which is how the other phones' delta listeners hear of it. createApp also brings
 // the watchdog, the status, the storage guard at sign-in and the sign-out order (forgetDevice).
-const SYNC = 'https://core.anawj.com/sync/0.6.0/index.js';
-// a save on a document another phone deleted brings it back, as setDoc did
+const SYNC = 'https://core.anawj.com/sync/0.6.4/index.js';
+// photos only: a save on a photo another phone deleted brings it back, as setDoc did
 const replace = (_current, record) => clean(record);
 // `bin` entry for a deleted document (items/events/shop/settings; a photo has none: it is read one at a time)
 const binWrite = ({ scope, coll, before, after, at, fields }) => !after && before && KINDS.includes(coll)
   ? [{ path: ['households', scope, 'bin', `${coll}:${before.id}`], data: { ...leaveEntry(coll, before, at), ...fields } }] : [];
 let leaveEntry = null;
+// This phone as people know it in a conflict sheet ("iPhone", "Android phone", "Computer")
+const deviceName = () => { const ua = globalThis.navigator?.userAgent || ''; return /iPhone|iPod/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android phone' : 'Computer'; };
 
 // The engine, once a page: the device copy, the outbox and the queue outlive a switch between households (the scope:
 // the household's id), and signing out wipes them. Saves the server refused go to the open household's `onError`.
@@ -317,7 +322,8 @@ function sync() {
     return AS.createApp({
       name: 'kakihome', colls: KINDS, path: (hid, kind) => ['households', hid, kind],
       sdk: async () => ({ ...await sdk(), emulator: usingEmulator }),
-      backend: { time: 'iso', merge: Object.fromEntries(ALL_KINDS.map(k => [k, replace])), onCommit: binWrite },
+      device: deviceName(),
+      backend: { time: 'iso', held: true, edits: '_edits', merge: { [PHOTOS]: replace }, onCommit: binWrite },
       stores: { metaOnly: ['bin'] },
       hub: { unstamped: 'full', bin: 'bin' },
       queue: {
@@ -352,7 +358,10 @@ export async function signOut() {
 
 // `onError(err)` hears of a write the server refused; `onSync(state)` of how the saving stands ({ state, count }: app-sync
 // syncStatus, with `confirmed` false until the server has answered once since the page opened).
-export async function openCloud(hid, onError = () => {}, onSync = () => {}) {
+// `onConflicts(list)` hears of this phone's held saves ([{ key, kind, id, deleted, fields, mine, theirs }]: app-sync
+// describe), at once if some are waiting from an earlier session and again whenever they change; `resolve(key, choice)`
+// answers one ('mine' | 'theirs' | { [field]: 'mine' | 'theirs' }).
+export async function openCloud(hid, onError = () => {}, onSync = () => {}, onConflicts = () => {}) {
   const { F, db } = await sdk();
   const app = await sync();
   await app.open(hid);
@@ -367,8 +376,16 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}) {
   let lastSt = null, live = false;
   const offStatus = app.status$(st => { lastSt = st; if (live && !closed) onSync(st); });
   setTimeout(() => { live = true; if (!closed && lastSt) onSync(lastSt); }, 0);
+  const heldNow = () => app.conflicts().map(c => app.describe(c.key)).filter(Boolean);
+  let heldSig = '';
+  const tellHeld = () => { if (closed) return; const l = heldNow(), g = JSON.stringify(l); if (g !== heldSig) { heldSig = g; onConflicts(l); } };
+  const offHeld = app.queue.onChange(tellHeld);
+  setTimeout(tellHeld, 0);
   function enqueue(kind, record) {
-    return app.save(kind, hid, record, null)
+    // base: the document as this phone had it (its last delivery) before this change, so a field changed only elsewhere
+    // merges and only a field changed on both phones is held; a new document, and a photo (last write wins), have none
+    const had = data[kind]?.get(record.id);
+    return app.save(kind, hid, record, had ? clean(had) : null)
       .then(() => true, e => { if (app.queue.error()) { console.warn('outbox', e?.message); onError(e); } return false; });
   }
   // the listeners: each kind's whole list from the engine (this phone's copy, then the server's changes), with this
@@ -419,6 +436,7 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}) {
     listen(fn) { cb = fn; startListening(); },
     // The listener watchdog: `nudge('resume')` at a moment the phone came back (online, visible, pageshow).
     nudge: (event = '') => app.nudge(event),
-    close() { closed = true; stopListening(); offStatus(); if (refused === onError) refused = null; },
+    resolve: (key, choice) => app.resolve(key, choice),
+    close() { closed = true; stopListening(); offStatus(); offHeld(); if (refused === onError) refused = null; },
   };
 }

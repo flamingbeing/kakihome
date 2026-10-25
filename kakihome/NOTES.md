@@ -61,7 +61,7 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   (copies items, history, shopping, photos and names into the one kept, checks counts on the server, joins members up
   to 20, then deletes the others; any error stops with nothing deleted; only the owner of a household can merge it
   away). No rules change.
-- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.1`, now `0.6.0` (exact pin,
+- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.1`, now `0.6.4` (exact pin,
   precached whole in `sw.js`) and the update module `0.2.0`. Every save goes to an outbox on the phone, then to the
   server in a transaction (`updatedAt` as an ISO string, stamped by the engine); each kind keeps a copy on the phone and
   listens only for what changed since its last sync, with a full read weekly (`unstamped: 'full'` until every document
@@ -75,7 +75,7 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   and the SDK cache, then the page reloads). The reload after an update waits while a form or sheet is open or saves are
   being sent (`canReload`). `merge.js` is the household merge (two households of one account), not the engine's merge.
   Photos stay one document per item, read when the item is opened, written through the same queue.
-- **Data path wired by app-sync's `createApp`** (25 Oct 2026, app-sync `0.6.0`): `js/cloud.js` keeps only Kaki Home's
+- **Data path wired by app-sync's `createApp`** (25 Oct 2026, app-sync `0.6.4`): `js/cloud.js` keeps only Kaki Home's
   own parts (the SDK and emulator setup, email sign-in, households and merging, the bin entry, the merge rule, the
   per-kind lists the app gets) and passes them to one `createApp` call, which brings Google sign-in (popup, redirect
   when installed), the storage guard, the outbox (now also in the origin's outbox list), the queue, the hub, the
@@ -111,3 +111,5 @@ fail to start, a stray one from an earlier run may still hold port 8085: `pgrep 
 
 The "Kaki Home checks" workflow runs them on PRs touching `kakihome/` or `__/`; they load the design kit from its live address. Never point a test at the
 live Firebase project.
+
+- **Held conflicts** (25 Oct 2026, app-sync `0.6.4`): `cloud.js` sets `backend.held` (items, events, shop, settings; photos stay last write wins) and `edits: '_edits'` (rules allow it on `settings/people`; the other kinds have no field whitelist). `put` hands the engine the document as the phone last had it (`base`), so a field changed only elsewhere merges and only a field changed on both phones to different values is held, on the phone that sent it second. `openCloud(hid, onError, onSync, onConflicts)` hears of held saves, `resolve(key, choice)` answers one; `app.js openConflicts` is the sheet (both versions side by side, when in SGT and who/which device; Keep mine / Keep theirs, per field when several clash). The home screen shows a panel and the status line says so until answered. Tests: `conflict.spec.mjs`.

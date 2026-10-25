@@ -103,3 +103,9 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .kh-em-title{font-weight:600}
 .kh-em-lead{margin:0 0 var(--home-s4);line-height:1.45}
 #kh-em-form .ha-field-error{margin:0 0 var(--home-s3)}
+.kh-conflict-btn{width:100%;text-align:left;font:inherit;border:0;cursor:pointer}
+.kh-conflict{padding:var(--home-s3) 0;border-bottom:1px solid var(--home-line,rgba(128,128,128,.25))}
+.kh-sides{display:grid;grid-template-columns:1fr 1fr;gap:var(--home-s3);margin:var(--home-s2) 0}
+.kh-side h3{font-size:1rem;margin:0 0 .25rem}.kh-side-v{margin:0}
+.kh-row{display:flex;gap:var(--home-s2);flex-wrap:wrap;margin:var(--home-s2) 0}
+.kh-row .ha-btn[aria-pressed=true]{outline:2px solid currentColor}
