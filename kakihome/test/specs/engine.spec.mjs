@@ -111,7 +111,7 @@ test('signing out waits while saves are unsent, then wipes this phone’s copy a
   await expect.poll(async () => (await fsAdmin.get(`households/${hid}/items/b`))?.name, { timeout: 30_000 }).toBe('Unsent');
   await expect.poll(() => sync(mum)).toEqual({ state: 'synced', count: 0 });
   const left = () => mum.evaluate(async hid => {
-    const AS = await import('https://core.anawj.com/sync/0.6.0/index.js');
+    const AS = await import('https://core.anawj.com/sync/0.6.4/index.js');
     const dbs = (await indexedDB.databases()).map(d => d.name).filter(n => /^kakihome-sync:/.test(n));
     return { dbs, outbox: await AS.createOutbox({ name: 'kakihome-outbox' }).list(hid) };
   }, hid);

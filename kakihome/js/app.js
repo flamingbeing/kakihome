@@ -26,7 +26,7 @@ const S = {
   items: new Map(), events: new Map(), shop: new Map(), settings: new Map(), pics: new Map(),
   backend: null, local: null, mode: DEMO ? 'demo' : 'local', cloud: null, user: null, household: null, allHouseholds: [], lookupFailed: false, creating: false, pending: null, localCount: 0,
   q: '', place: '', sort: prefs.get('sort', 'expiry'),
-  draft: null, dirty: false, pendingRender: false, syncError: false, sync: null,
+  draft: null, dirty: false, pendingRender: false, syncError: false, sync: null, conflicts: [],
   originTab: '#/', backLabel: 'Kaki Home',
 };
 
@@ -241,6 +241,7 @@ function statusLine() {
   if (S.mode === 'cloud') {
     const sy = S.sync, c = sy?.count || 0;
     if (!navigator.onLine && sy?.state !== 'attention' && sy?.state !== 'at-risk') return c ? `Offline. ${plural(c, 'change')} will reach the household when there’s signal.` : 'Offline. Changes reach the household when there’s signal.';
+    if (S.conflicts.length) return `${plural(S.conflicts.length, 'change')} to check: changed on another phone too`;
     if (sy?.state === 'attention') return `Needs attention: ${plural(c, 'change')} didn’t reach the household`;
     if (sy?.state === 'at-risk') return `Only on this phone: ${plural(c, 'change')} waiting for signal`;
     if (sy?.state === 'saving') return `Saving ${plural(c, 'change')}…`;
@@ -255,6 +256,7 @@ function viewHome() {
   const all = items();
   let h = `<h1 class="ha-large-title">Kaki Home</h1><p class="ha-large-sub">${esc(statusLine())}</p>`;
   if (S.syncError) h += `<div class="ha-panel kh-alert" role="status">${icon('alert')}<span>Some changes didn’t reach the household. ${esc(S.syncError)}</span></div>`;
+  if (S.mode === 'cloud' && S.conflicts.length) h += `<button type="button" class="ha-panel kh-alert kh-conflict-btn" data-act="conflicts-open">${icon('alert')}<span>${esc(plural(S.conflicts.length, 'change'))} also changed on another phone. Tap to choose which to keep.</span></button>`;
   if (S.mode === 'cloud' && S.allHouseholds.length > 1) h += `<a class="ha-panel kh-alert" href="#/settings">${icon('alert')}<span>You’re in more than one household. Merge them in Settings.</span></a>`;
   h += viewTour();
   if (!all.length) {
@@ -839,6 +841,61 @@ function afterSheet() {
   if (S.pendingRender && !haSheetOpen()) redraw();
 }
 
+// ---- Held conflicts ---------------------------------------------------------------------------------------------
+// A save that met a change to the same field made on another phone is held on the phone that sent it second (app-sync
+// held conflicts): nothing is overwritten until its person chooses. Both versions side by side, each with when it
+// changed (SGT) and who changed it (name, device).
+let conflictSheet = null;
+const FIELD = { name: 'Name', batches: 'Stock', location: 'Where it’s kept', notes: 'Notes', brand: 'Brand', note: 'Note', text: 'Text', done: 'Done', names: 'Names' };
+const fieldLabel = path => FIELD[path.split('.')[0]] || path;
+function sayValue(v, deleted) {
+  if (deleted) return '(deleted)';
+  if (v == null || v === '') return '(empty)';
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (Array.isArray(v) && v.every(b => b && typeof b === 'object' && 'qty' in b)) return v.map(b => `${b.qty}${b.expiry ? ` · use by ${b.expiry}` : ''}`).join('; ') || '(none)';
+  if (typeof v === 'object') return Object.values(v).filter(x => typeof x !== 'object').map(String).join(', ') || JSON.stringify(v).slice(0, 120);
+  return String(v);
+}
+const sayWho = side => [side.when, [side.by, side.device].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'time and author unknown';
+const sayWhat = c => { const r = c.mine.value || c.theirs.value || {}; return r.name || r.title || r.text || c.id; };
+function drawConflicts() {
+  const body = $('.ha-sheet-body', conflictSheet.el);
+  if (!S.conflicts.length) { const el = conflictSheet.el; conflictSheet = null; haCloseSheet(el); haToast('All chosen.'); return; }
+  const side = (title, sd, text) => `<div class="kh-side"><h3>${esc(title)}</h3><p class="kh-side-v kh-break">${esc(text)}</p><p class="ha-section-footer">${esc(sayWho(sd))}</p></div>`;
+  body.innerHTML = `<p class="kh-em-lead">Someone changed the same thing on another phone. Choose which to keep; nothing is lost until you do. Changes to other parts are kept either way.</p>
+    <ul class="ha-list">${S.conflicts.map((c, i) => {
+      const whole = c.deleted.mine || c.deleted.theirs || c.fields.length !== 1;
+      const rows = c.fields.length > 1 && !c.deleted.mine && !c.deleted.theirs
+        ? c.fields.map((f, j) => `<div class="kh-field" data-i="${i}" data-j="${j}"><p class="ha-row-sub">${esc(fieldLabel(f.path))}</p>
+            <div class="kh-sides">${side('Yours', f.mine, sayValue(f.mine.value))}${side('Other phone', f.theirs, sayValue(f.theirs.value))}</div>
+            <div class="kh-row"><button type="button" class="ha-btn ha-btn--small" data-cf="pick" data-i="${i}" data-j="${j}" data-w="mine">Mine</button><button type="button" class="ha-btn ha-btn--small" data-cf="pick" data-i="${i}" data-j="${j}" data-w="theirs">Theirs</button></div></div>`).join('')
+          + `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-cf="picks" data-i="${i}" disabled>Keep these choices</button>`
+        : `<div class="kh-sides">${side('Yours', c.mine, c.fields[0] ? sayValue(c.fields[0].mine.value) : sayValue(c.mine.value && sayWhat(c), c.deleted.mine))}${side('Other phone', c.theirs, c.fields[0] ? sayValue(c.fields[0].theirs.value) : sayValue(c.theirs.value && sayWhat(c), c.deleted.theirs))}</div>
+          <div class="kh-row"><button type="button" class="ha-btn ha-btn--primary" data-cf="mine" data-i="${i}">Keep mine</button><button type="button" class="ha-btn" data-cf="theirs" data-i="${i}">Keep theirs</button></div>`;
+      return `<li class="kh-conflict"><p class="ha-row-title kh-break">${esc(sayWhat(c))}${c.fields.length === 1 ? ` · ${esc(fieldLabel(c.fields[0].path))}` : ''}</p>${rows}</li>`;
+    }).join('')}</ul><p class="ha-section-footer" id="kh-cf-msg" role="status"></p>`;
+}
+function openConflicts() {
+  if (!S.conflicts.length || conflictSheet) return;
+  const picks = new Map();   // key -> { [path]: 'mine' | 'theirs' }
+  const s = conflictSheet = haSheet({ title: 'Changed on another phone', closeLabel: 'Close', grey: true, body: '', onClose: () => { conflictSheet = null; afterSheet(); } });
+  drawConflicts();
+  s.el.addEventListener('click', async e => {
+    const b = e.target.closest('[data-cf]'); if (!b || b.disabled || !S.backend?.resolve) return;
+    const c = S.conflicts[Number(b.dataset.i)]; if (!c) return;
+    if (b.dataset.cf === 'pick') {
+      const p = picks.get(c.key) || {}; p[c.fields[Number(b.dataset.j)].path] = b.dataset.w; picks.set(c.key, p);
+      for (const x of s.el.querySelectorAll(`[data-cf="pick"][data-i="${b.dataset.i}"][data-j="${b.dataset.j}"]`)) x.setAttribute('aria-pressed', String(x === b));
+      const go = s.el.querySelector(`[data-cf="picks"][data-i="${b.dataset.i}"]`); if (go) go.disabled = c.fields.some(f => !p[f.path]);
+      return;
+    }
+    const choice = b.dataset.cf === 'picks' ? picks.get(c.key) : b.dataset.cf;
+    for (const x of s.el.querySelectorAll('button')) x.disabled = true;
+    try { await S.backend.resolve(c.key, choice); picks.delete(c.key); }
+    catch (err) { const m = $('#kh-cf-msg', s.el); if (m) m.textContent = 'That didn’t go through. Try again.'; console.warn('resolve', err?.code || err); if (conflictSheet) drawConflicts(); }
+  });
+}
+
 // ---- Shopping ---------------------------------------------------------------------------------------------------
 
 function shopLists() {
@@ -1145,6 +1202,7 @@ async function onClick(e) {
       return;
     case 'email-open': return openEmailSheet();
     case 'merge-open': return openMerge();
+    case 'conflicts-open': return openConflicts();
     case 'verified': return checkVerified();
     case 'verify-resend':
       try { await S.cloud.resendVerification(); haToast('Sent again. Check your email.'); } catch (err) { haToast(S.cloud.explain(err, 'Sending it')); }
@@ -1344,9 +1402,10 @@ async function useHousehold(h) {
   S.household = h;
   prefs.set('household', h.id);
   S.backend?.close?.();
-  S.sync = null;
+  S.sync = null; S.conflicts = [];
   const me = S.backend = await S.cloud.openCloud(h.id, err => { S.syncError = S.cloud.explain(err, 'Saving'); redraw(); },
-    st => { if (S.backend === me) { S.sync = st; redraw(); } });
+    st => { if (S.backend === me) { S.sync = st; redraw(); } },
+    list => { if (S.backend === me) { S.conflicts = list; if (conflictSheet) drawConflicts(); redraw(); } });
   S.mode = 'cloud';
   S.pics.clear();
   loadInto(await S.backend.load());
@@ -1362,7 +1421,7 @@ async function useLocal() {
   unwatch?.(); unwatch = null;
   S.backend = S.local;
   S.mode = 'local';
-  S.household = null; S.allHouseholds = []; S.lookupFailed = false; S.syncError = false; S.sync = null;
+  S.household = null; S.allHouseholds = []; S.lookupFailed = false; S.syncError = false; S.sync = null; S.conflicts = [];
   S.pics.clear();
   loadInto(await S.local.load());
   migratePhotos();

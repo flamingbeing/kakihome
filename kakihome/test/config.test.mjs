@@ -56,16 +56,16 @@ assert.ok(sw.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'r
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.ok(app.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'the page loads the same register.js');
 assert.ok(!/take-over|skipWaiting|Update ready/.test(app), 'no update toast or take-over message left');
-// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and the sync engine 0.6.0
+// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and the sync engine 0.6.4
 assert.equal(core, '0.2.0', 'the update module');
 assert.match(app, /register\(\{[^}]*canReload: reloadOk/, 'the reload after an update asks canReload');
 const cloud = fs.readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8');
 const syncPin = cloud.match(/const SYNC = 'https:\/\/core\.anawj\.com\/sync\/(\d+\.\d+\.\d+)\/index\.js'/)?.[1];
-assert.equal(syncPin, '0.6.0', 'cloud.js pins the sync engine exactly');
+assert.equal(syncPin, '0.6.4', 'cloud.js pins the sync engine exactly');
 // the engine is precached whole (install is all or nothing, and the app opens offline): index.js and every module it loads
-const engine = ['index.js', ...'sync writes conflict store outbox watchdog persist status firestore forget registry report app'.split(' ').map(m => `src/${m}.js`)];
+const engine = ['index.js', ...'sync writes conflict store outbox watchdog persist status firestore forget registry report app cache'.split(' ').map(m => `src/${m}.js`)];
 for (const f of engine) assert.ok(sw.includes(`'https://core.anawj.com/sync/${syncPin}/${f}'`), 'sw.js SHELL has the engine file ' + f);
-assert.ok(!/sync\/(?!0\.6\.0)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other engine version anywhere');
+assert.ok(!/sync\/(?!0\.6\.4)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other engine version anywhere');
 assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com/, 'pinned core files are cached as they are fetched');
 // the engine is wired by one createApp call (sign-in, the queue, the hub, the watchdog, the status, sign-out through
 // forgetDevice); nothing of it is wired by hand here any more
