@@ -157,3 +157,31 @@ test('rules: the delete feed is for members, with a fixed shape', async ({ phone
     expect(denied, 'an outsider').toEqual(['permission-denied', 'permission-denied']);
   }
 });
+
+test('sign-out and the reload still happen when clearing the SDK cache hangs (another tab holds it)', async ({ phone, fsAdmin, uid }) => {
+  const mumE = `mum-${uid}@example.com`, hid = `hh-${uid}`;
+  await home(fsAdmin, hid, mumE, [mumE]);
+  const mum = await person(phone, 'mum', mumE, hid);
+  await expect.poll(() => mum.evaluate(() => window.__kakihome.S.backend?.kind)).toBe('cloud');   // (the engine is up)
+  await mum.evaluate(() => { window.__before = true; });
+  const t0 = Date.now();
+  // the page reloads itself once signed out: the marker is gone then
+  const signedOut = mum.evaluate(() => window.__kakihome.S.cloud.signOut({ clear: () => new Promise(() => {}) })).catch(() => 'navigated');
+  await mum.waitForFunction(() => !window.__before, null, { timeout: 15_000 });
+  expect(Date.now() - t0, 'waited for the timeout, not for ever').toBeGreaterThan(2500);
+  await signedOut;
+  await mum.waitForFunction(() => window.__kakihome?.S);
+  await expect(mum.locator('[data-act="signin"]'), 'signed out').toBeVisible();
+});
+
+test('merging away a household also removes its delete feed', async ({ phone, fsAdmin, uid }) => {
+  const mumE = `mum-${uid}@example.com`, hid = `hh-${uid}`;
+  await home(fsAdmin, hid, mumE, [mumE]);
+  await fsAdmin.put(`households/${hid}/bin/items_x`, { id: 'items:x', kind: 'items', data: { id: 'x' }, deletedAt: OLD });
+  await seed(fsAdmin, hid, 'a');
+  const mum = await person(phone, 'mum', mumE, hid);
+  await mum.evaluate(h => window.__kakihome.S.cloud.removeHousehold(h), hid);
+  expect(await fsAdmin.list(`households/${hid}/bin`), 'no feed left behind').toEqual([]);
+  expect(await fsAdmin.list(`households/${hid}/items`)).toEqual([]);
+  expect(await fsAdmin.get(`households/${hid}`)).toBeNull();
+});

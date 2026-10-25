@@ -213,19 +213,21 @@ export async function synced(ms = 4000) {
 // wipe this phone's copy of the household, the outbox and the SDK's own offline cache, then sign out. With the real
 // project the SDK is terminated by that, so the page reloads (the emulator tests keep their page and cache).
 // Resolves false (nothing wiped, still signed in) when saves turned up unsent.
-export async function signOut() {
+const SDK_CLEAR_WAIT = 3000;
+export async function signOut({ clear = undefined } = {}) {
   const { A, auth } = await sdk();
   if (engine) {
     const { AS, fs, hub, stores, queue } = engine;
+    const cleaning = clear !== undefined ? clear : emulator ? null : fs.clearCache;   // (`clear`: tests only)
     const r = await AS.forgetDevice({
       hub, stores, queue, proceed: () => queue.flush(1500),
-      clearBackendCache: emulator ? null : () => Promise.race([fs.clearCache(), new Promise(r => setTimeout(r, 3000))]),   // (can hang while another tab uses the cache: sign out anyway)
+      clearBackendCache: cleaning ? () => Promise.race([cleaning(), new Promise(r => setTimeout(r, SDK_CLEAR_WAIT))]) : null,   // (can hang while another tab uses the cache: sign out anyway)
       extra: () => A.signOut(auth),
     });
     if (!r.wiped) { engine.resume?.(); return false; }   // (forgetDevice has stopped the listeners already: start them again)
     if (r.failed.includes('extra')) await A.signOut(auth);
     owner = ''; engine = null;
-    if (!emulator) { fb = null; setTimeout(() => location.reload(), 600); }
+    if (cleaning) { fb = null; setTimeout(() => location.reload(), 600); }
     return true;
   }
   await A.signOut(auth);
@@ -292,6 +294,7 @@ async function writeAll(F, db, hid, kind, list) {
 }
 const MERGE_KINDS = ['items', 'events', 'shop', 'photos'];
 const ALL_KINDS = [...MERGE_KINDS, 'settings'];
+const DELETE_KINDS = [...ALL_KINDS, 'bin'];   // (removeHousehold also clears the delete feed)
 
 export async function addMembers(hid, members) { return setMembers(hid, members); }
 // Merging, step 1: copy everything in household `fromId` into `toId` (ids are random, so nothing clashes; running it
@@ -325,7 +328,7 @@ export async function copyHousehold(toId, fromId, members) {
 // Only its owner may (the rules).
 export async function removeHousehold(hid) {
   const { F, db } = await sdk();
-  for (const k of ALL_KINDS) {
+  for (const k of DELETE_KINDS) {
     const ids = (await F.getDocs(F.collection(db, 'households', hid, k))).docs.map(d => d.ref);
     for (let i = 0; i < ids.length; i += 400) {
       const b = F.writeBatch(db);
