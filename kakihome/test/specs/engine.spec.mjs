@@ -111,7 +111,7 @@ test('signing out waits while saves are unsent, then wipes this phone’s copy a
   await expect.poll(async () => (await fsAdmin.get(`households/${hid}/items/b`))?.name, { timeout: 30_000 }).toBe('Unsent');
   await expect.poll(() => sync(mum)).toEqual({ state: 'synced', count: 0 });
   const left = () => mum.evaluate(async hid => {
-    const AS = await import('https://core.anawj.com/sync/0.4.1/index.js');
+    const AS = await import('https://core.anawj.com/sync/0.6.0/index.js');
     const dbs = (await indexedDB.databases()).map(d => d.name).filter(n => /^kakihome-sync:/.test(n));
     return { dbs, outbox: await AS.createOutbox({ name: 'kakihome-outbox' }).list(hid) };
   }, hid);
@@ -158,21 +158,8 @@ test('rules: the delete feed is for members, with a fixed shape', async ({ phone
   }
 });
 
-test('sign-out and the reload still happen when clearing the SDK cache hangs (another tab holds it)', async ({ phone, fsAdmin, uid }) => {
-  const mumE = `mum-${uid}@example.com`, hid = `hh-${uid}`;
-  await home(fsAdmin, hid, mumE, [mumE]);
-  const mum = await person(phone, 'mum', mumE, hid);
-  await expect.poll(() => mum.evaluate(() => window.__kakihome.S.backend?.kind)).toBe('cloud');   // (the engine is up)
-  await mum.evaluate(() => { window.__before = true; });
-  const t0 = Date.now();
-  // the page reloads itself once signed out: the marker is gone then
-  const signedOut = mum.evaluate(() => window.__kakihome.S.cloud.signOut({ clear: () => new Promise(() => {}) })).catch(() => 'navigated');
-  await mum.waitForFunction(() => !window.__before, null, { timeout: 15_000 });
-  expect(Date.now() - t0, 'waited for the timeout, not for ever').toBeGreaterThan(2500);
-  await signedOut;
-  await mum.waitForFunction(() => window.__kakihome?.S);
-  await expect(mum.locator('[data-act="signin"]'), 'signed out').toBeVisible();
-});
+// (Clearing the SDK cache when another tab holds it: the engine's own clearCache gives up after 3 s since app-sync 0.4.2,
+// tested there; createApp skips it on the emulator, so there is nothing of Kaki Home's own left to test here.)
 
 test('merging away a household also removes its delete feed', async ({ phone, fsAdmin, uid }) => {
   const mumE = `mum-${uid}@example.com`, hid = `hh-${uid}`;

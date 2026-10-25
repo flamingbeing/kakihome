@@ -16,3 +16,5 @@
   full until a one-off backfill stamps them (not run; the app works the same, only the reads differ).
 - 25 Oct 2026: Firebase stays behind `js/cloud.js`: a test in `test/config.test.mjs` fails if any other page module loads
   the SDK, calls Firestore or Auth, or imports app-sync itself (none does today; nothing in the app changed).
+- 25 Oct 2026: app-sync 0.6.0; `js/cloud.js` hands its engine wiring to one `createApp` call (about 90 lines fewer, no
+  behaviour change; all 47 specs green). Details in [NOTES.md](NOTES.md).

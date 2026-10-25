@@ -56,20 +56,22 @@ assert.ok(sw.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'r
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.ok(app.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'the page loads the same register.js');
 assert.ok(!/take-over|skipWaiting|Update ready/.test(app), 'no update toast or take-over message left');
-// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and the sync engine 0.4.1
+// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and the sync engine 0.6.0
 assert.equal(core, '0.2.0', 'the update module');
 assert.match(app, /register\(\{[^}]*canReload: reloadOk/, 'the reload after an update asks canReload');
 const cloud = fs.readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8');
 const syncPin = cloud.match(/const SYNC = 'https:\/\/core\.anawj\.com\/sync\/(\d+\.\d+\.\d+)\/index\.js'/)?.[1];
-assert.equal(syncPin, '0.4.1', 'cloud.js pins the sync engine exactly');
+assert.equal(syncPin, '0.6.0', 'cloud.js pins the sync engine exactly');
 // the engine is precached whole (install is all or nothing, and the app opens offline): index.js and every module it loads
-const engine = ['index.js', ...'sync writes conflict store outbox watchdog persist status firestore forget'.split(' ').map(m => `src/${m}.js`)];
+const engine = ['index.js', ...'sync writes conflict store outbox watchdog persist status firestore forget registry report app'.split(' ').map(m => `src/${m}.js`)];
 for (const f of engine) assert.ok(sw.includes(`'https://core.anawj.com/sync/${syncPin}/${f}'`), 'sw.js SHELL has the engine file ' + f);
-assert.ok(!/sync\/(?!0\.4\.1)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other engine version anywhere');
+assert.ok(!/sync\/(?!0\.6\.0)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other engine version anywhere');
 assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com/, 'pinned core files are cached as they are fetched');
-// sign-out goes through forgetDevice, saves through the write queue (no direct SDK write or listener left for the data)
-assert.ok(cloud.includes('AS.forgetDevice('), 'sign-out is forgetDevice');
-assert.match(cloud, /clearBackendCache: cleaning \? \(\) => Promise\.race\(\[cleaning\(\), new Promise\(r => setTimeout\(r, SDK_CLEAR_WAIT\)\)\]\)/, 'clearing the SDK cache has a timeout (another tab can hold it)');
+// the engine is wired by one createApp call (sign-in, the queue, the hub, the watchdog, the status, sign-out through
+// forgetDevice); nothing of it is wired by hand here any more
+assert.equal((cloud.match(/AS\.createApp\(/g) || []).length, 1, 'one createApp');
+assert.ok(!/AS\.(createSyncHub|createWriteQueue|createStores|createOutbox|createWatchdog|createFirestoreBackend|forgetDevice|persistGuard|replanOnWake|syncStatus)\(/.test(cloud), 'no hand wiring of the engine left');
+assert.ok(!/A\.(signInWithPopup|signInWithRedirect|getRedirectResult|onAuthStateChanged|signOut)\(/.test(cloud), 'Google sign-in and sign-out are createApp\'s');
 assert.ok(!/F\.setDoc\(|F\.deleteDoc\(\s*F\.doc\(col/.test(cloud), 'no direct setDoc/deleteDoc for household data');
 assert.equal((cloud.match(/F\.onSnapshot\(/g) || []).length, 1, 'one onSnapshot left: the household document itself (the collections go through the hub)');
 console.log('kakihome config: ok');
