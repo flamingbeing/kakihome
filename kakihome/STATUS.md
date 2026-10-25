@@ -10,7 +10,7 @@
   on a first visit the service worker claims the page and the app reloads itself once (`controllerchange` in `app.js`), which
   made the old script's first check fail every time; specs block service workers except the one that tests them.
 - Nothing is waiting on the owner. Decisions and plans: the owner's private notes. Technical decisions: [NOTES.md](NOTES.md).
-- 25 Oct 2026: data path on app-sync 0.4.0 + update module 0.2.0 (outbox, changed-since listeners, delete feed, status line,
+- 25 Oct 2026: data path on app-sync 0.4.1 + update module 0.2.0 (outbox, changed-since listeners, delete feed, status line,
   `forgetDevice` at sign-out, no reload mid-edit); details in [NOTES.md](NOTES.md). The rules gain a `bin` collection
   (additive; deployed on merge). Left: events and shopping lines made before this carry no `updatedAt`, so opens read in
   full until a one-off backfill stamps them (not run; the app works the same, only the reads differ).

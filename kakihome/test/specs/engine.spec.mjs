@@ -1,4 +1,4 @@
-// The data path on app-sync 0.4.0 (cloud.js), against the local emulators (demo-kakihome, fake accounts; never the live
+// The data path on app-sync 0.4.1 (cloud.js), against the local emulators (demo-kakihome, fake accounts; never the live
 // project): the delete feed, saves that wait in the outbox, the status line, sign-out. Run: npx playwright test engine
 import { test, expect } from './fixtures.mjs';
 
@@ -98,12 +98,20 @@ test('signing out waits while saves are unsent, then wipes this phone’s copy a
   await ask.locator('button[value="no"]').click();
   expect(await mum.evaluate(() => window.__kakihome.S.user?.email), 'still signed in').toBe(mumE);
   expect(await sync(mum), 'and nothing was dropped').toEqual({ state: 'saving', count: 1 });
+  // "Sign out anyway" while saves are unsent: forgetDevice refuses, nothing is wiped, and the phone keeps listening
+  await mum.click('[data-act="signout"]');
+  await expect(ask).toBeVisible({ timeout: 15_000 });
+  await ask.locator('button[value="yes"]').click();
+  await expect(mum.locator('.ha-toast.is-visible', { hasText: 'still signed in' })).toBeVisible({ timeout: 15_000 });
+  expect(await mum.evaluate(() => window.__kakihome.S.user?.email), 'still signed in after the refusal').toBe(mumE);
   await mum.context().unroute(BLOCK);
+  await fsAdmin.put(`households/${hid}/items/c`, { id: 'c', name: 'From elsewhere', batches: [], updatedAt: '2026-10-25T00:00:00.000Z' });
   await mum.evaluate(() => dispatchEvent(new Event('online')));
+  await expect.poll(() => names(mum), 'the listeners were started again').toContain('From elsewhere');
   await expect.poll(async () => (await fsAdmin.get(`households/${hid}/items/b`))?.name, { timeout: 30_000 }).toBe('Unsent');
   await expect.poll(() => sync(mum)).toEqual({ state: 'synced', count: 0 });
   const left = () => mum.evaluate(async hid => {
-    const AS = await import('https://core.anawj.com/sync/0.4.0/index.js');
+    const AS = await import('https://core.anawj.com/sync/0.4.1/index.js');
     const dbs = (await indexedDB.databases()).map(d => d.name).filter(n => /^kakihome-sync:/.test(n));
     return { dbs, outbox: await AS.createOutbox({ name: 'kakihome-outbox' }).list(hid) };
   }, hid);

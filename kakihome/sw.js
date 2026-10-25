@@ -40,17 +40,17 @@ const SHELL = [
   'https://design.flamingbeing.com/v1/icons.svg',
   // the page side of app-update and the sync engine (one exact version each), so the app opens offline
   'https://core.anawj.com/update/0.2.0/register.js',
-  'https://core.anawj.com/sync/0.4.0/index.js',
-  'https://core.anawj.com/sync/0.4.0/src/sync.js',
-  'https://core.anawj.com/sync/0.4.0/src/writes.js',
-  'https://core.anawj.com/sync/0.4.0/src/conflict.js',
-  'https://core.anawj.com/sync/0.4.0/src/store.js',
-  'https://core.anawj.com/sync/0.4.0/src/outbox.js',
-  'https://core.anawj.com/sync/0.4.0/src/watchdog.js',
-  'https://core.anawj.com/sync/0.4.0/src/persist.js',
-  'https://core.anawj.com/sync/0.4.0/src/status.js',
-  'https://core.anawj.com/sync/0.4.0/src/firestore.js',
-  'https://core.anawj.com/sync/0.4.0/src/forget.js',
+  'https://core.anawj.com/sync/0.4.1/index.js',
+  'https://core.anawj.com/sync/0.4.1/src/sync.js',
+  'https://core.anawj.com/sync/0.4.1/src/writes.js',
+  'https://core.anawj.com/sync/0.4.1/src/conflict.js',
+  'https://core.anawj.com/sync/0.4.1/src/store.js',
+  'https://core.anawj.com/sync/0.4.1/src/outbox.js',
+  'https://core.anawj.com/sync/0.4.1/src/watchdog.js',
+  'https://core.anawj.com/sync/0.4.1/src/persist.js',
+  'https://core.anawj.com/sync/0.4.1/src/status.js',
+  'https://core.anawj.com/sync/0.4.1/src/firestore.js',
+  'https://core.anawj.com/sync/0.4.1/src/forget.js',
 ];
 const MANIFEST = {};
 

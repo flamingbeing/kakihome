@@ -61,7 +61,7 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   (copies items, history, shopping, photos and names into the one kept, checks counts on the server, joins members up
   to 20, then deletes the others; any error stops with nothing deleted; only the owner of a household can merge it
   away). No rules change.
-- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.0` (exact pin,
+- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.1` (exact pin,
   precached whole in `sw.js`) and the update module `0.2.0`. Every save goes to an outbox on the phone, then to the
   server in a transaction (`updatedAt` as an ISO string, stamped by the engine); each kind keeps a copy on the phone and
   listens only for what changed since its last sync, with a full read weekly (`unstamped: 'full'` until every document

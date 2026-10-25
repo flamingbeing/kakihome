@@ -222,7 +222,7 @@ export async function signOut() {
       clearBackendCache: emulator ? null : fs.clearCache,
       extra: () => A.signOut(auth),
     });
-    if (!r.wiped) return false;
+    if (!r.wiped) { engine.resume?.(); return false; }   // (forgetDevice has stopped the listeners already: start them again)
     if (r.failed.includes('extra')) await A.signOut(auth);
     owner = ''; engine = null;
     if (!emulator) { fb = null; setTimeout(() => location.reload(), 600); }
@@ -343,7 +343,7 @@ export async function removeHousehold(hid) {
 // since the last sync (`updatedAt`, stamped by the adapter at commit), so a quiet reopen reads about one document a kind.
 // Saves replace the document as setDoc did (last write wins; there is no conflict screen). A delete writes a `bin`
 // entry in the same transaction, which is how the other phones' delta listeners hear of it.
-const SYNC = 'https://core.anawj.com/sync/0.4.0/index.js';
+const SYNC = 'https://core.anawj.com/sync/0.4.1/index.js';
 // a save on a document another phone deleted brings it back, as setDoc did
 const replace = (_current, record) => clean(record);
 // `bin` entry for a deleted document (items/events/shop/settings; a photo has none: it is read one at a time)
@@ -383,7 +383,7 @@ async function sync() {
   });
   AS.replanOnWake(hub);
   globalThis.addEventListener?.('online', () => queue.kick());
-  engine = { AS, fs, stores, hub, queue, meta, codes, persisted: true, saving: new Set() };
+  engine = { AS, fs, stores, hub, queue, meta, codes, persisted: true, saving: new Set(), resume: null };
   return engine;
 }
 
@@ -469,6 +469,7 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}) {
     try { await Promise.race([turn, new Promise(r => setTimeout(r, 4000))]); } catch (e) { console.warn('network restart', e?.code || e?.message); } finally { cycling = false; }
     turn.catch(() => {});
   }
+  E.resume = () => { if (!closed) { stopListening(); startListening(); } };
   startListening();
   dog.opened();
   if (globalThis.setInterval) timer = setInterval(() => { if (!closed) dog.check(); }, 3000);
