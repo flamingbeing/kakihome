@@ -5,6 +5,7 @@
   The app's own status: `kakihome/STATUS.md`.
 - 23 Oct 2026: browser and emulator tests are Playwright Test specs (`npx playwright test`, CI job `specs`); details in
   `kakihome/STATUS.md`.
+- 25 Oct 2026: data path moved to app-sync 0.4.1 and update 0.2.0 (`kakihome/NOTES.md`).
 
 ## Waiting on the owner
 -

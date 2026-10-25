@@ -204,14 +204,34 @@ export async function emulatorSignIn(email) {
   await A.signInWithCredential(auth, A.GoogleAuthProvider.credential(JSON.stringify({ sub: lc(email).replace(/\W/g, ''), email: lc(email), email_verified: true })));
 }
 // True when every change made on this phone has reached the household within ms (false offline or on a timeout), so
-// signing out doesn't silently drop changes still waiting for signal.
+// signing out doesn't silently drop changes still waiting for signal. The write queue's flush: it also refuses while
+// another tab holds unsent saves or a direct write (copy, restore) is unacknowledged.
 export async function synced(ms = 4000) {
-  const { F, db } = await sdk();
-  return Promise.race([F.waitForPendingWrites(db).then(() => true, () => false), new Promise(r => setTimeout(() => r(false), ms))]);
+  return engine ? engine.queue.flush(ms) : true;
 }
-export async function signOut() {
+// Sign-out on a shared phone, in one order (app-sync forgetDevice): stop the listeners, check again nothing is unsent,
+// wipe this phone's copy of the household, the outbox and the SDK's own offline cache, then sign out. With the real
+// project the SDK is terminated by that, so the page reloads (the emulator tests keep their page and cache).
+// Resolves false (nothing wiped, still signed in) when saves turned up unsent.
+const SDK_CLEAR_WAIT = 3000;
+export async function signOut({ clear = undefined } = {}) {
   const { A, auth } = await sdk();
+  if (engine) {
+    const { AS, fs, hub, stores, queue } = engine;
+    const cleaning = clear !== undefined ? clear : emulator ? null : fs.clearCache;   // (`clear`: tests only)
+    const r = await AS.forgetDevice({
+      hub, stores, queue, proceed: () => queue.flush(1500),
+      clearBackendCache: cleaning ? () => Promise.race([cleaning(), new Promise(r => setTimeout(r, SDK_CLEAR_WAIT))]) : null,   // (can hang while another tab uses the cache: sign out anyway)
+      extra: () => A.signOut(auth),
+    });
+    if (!r.wiped) { engine.resume?.(); return false; }   // (forgetDevice has stopped the listeners already: start them again)
+    if (r.failed.includes('extra')) await A.signOut(auth);
+    owner = ''; engine = null;
+    if (cleaning) { fb = null; setTimeout(() => location.reload(), 600); }
+    return true;
+  }
   await A.signOut(auth);
+  return true;
 }
 
 // The household this account belongs to (the owner adds members by their email). An account can end up in more than
@@ -241,9 +261,18 @@ export async function setMembers(hid, members) {
   const { F, db } = await sdk();
   await F.updateDoc(F.doc(db, 'households', hid), { members: [...new Set(members.map(lc).filter(Boolean))] });
 }
+// Calls `cb(household)` when the household changes, and `cb(null)` once when it is gone or can't be read any more
+// (deleted or merged away by its owner, this account removed from it, or the rules said no: a listener that fails is
+// finished). A copy the phone made up from its own cache (no signal, nothing cached) is not "gone": only the server
+// saying so counts.
 export async function watchHousehold(hid, cb) {
   const { F, db } = await sdk();
-  return F.onSnapshot(F.doc(db, 'households', hid), s => cb(s.exists() ? { id: s.id, ...s.data() } : null), () => cb(null));
+  let last = '';
+  return F.onSnapshot(F.doc(db, 'households', hid), { includeMetadataChanges: true }, s => {
+    if (!s.exists()) { if (!s.metadata.fromCache && last !== 'gone') { last = 'gone'; cb(null); } return; }
+    const h = { id: s.id, ...s.data() }, j = JSON.stringify(h);
+    if (j !== last) { last = j; cb(h); }
+  }, e => { console.warn('household', e?.code); if (last !== 'gone') { last = 'gone'; cb(null); } });
 }
 
 // Firestore can't store undefined; drop it.
@@ -253,8 +282,10 @@ const clean = o => JSON.parse(JSON.stringify(o));
 // 10 MB a request).
 async function writeAll(F, db, hid, kind, list) {
   let b = null, n = 0, bytes = 0;
+  const at = new Date().toISOString();
   for (const o of list) {
     const c = clean(o), size = JSON.stringify(c).length;
+    c.updatedAt = at;   // stamped now, so every phone's delta listener hears it
     if (b && (n >= 400 || bytes + size > 4e6)) { await b.commit(); b = null; }
     if (!b) { b = F.writeBatch(db); n = 0; bytes = 0; }
     b.set(F.doc(F.collection(db, 'households', hid, kind), o.id), c); n++; bytes += size;
@@ -263,6 +294,7 @@ async function writeAll(F, db, hid, kind, list) {
 }
 const MERGE_KINDS = ['items', 'events', 'shop', 'photos'];
 const ALL_KINDS = [...MERGE_KINDS, 'settings'];
+const DELETE_KINDS = [...ALL_KINDS, 'bin'];   // (removeHousehold also clears the delete feed)
 
 export async function addMembers(hid, members) { return setMembers(hid, members); }
 // Merging, step 1: copy everything in household `fromId` into `toId` (ids are random, so nothing clashes; running it
@@ -296,7 +328,7 @@ export async function copyHousehold(toId, fromId, members) {
 // Only its owner may (the rules).
 export async function removeHousehold(hid) {
   const { F, db } = await sdk();
-  for (const k of ALL_KINDS) {
+  for (const k of DELETE_KINDS) {
     const ids = (await F.getDocs(F.collection(db, 'households', hid, k))).docs.map(d => d.ref);
     for (let i = 0; i < ids.length; i += 400) {
       const b = F.writeBatch(db);
@@ -307,24 +339,159 @@ export async function removeHousehold(hid) {
   await F.deleteDoc(F.doc(db, 'households', hid));
 }
 
-export async function openCloud(hid, onError = () => {}) {
+// ---- saving and listening through app-sync (core.anawj.com/sync/) ----------------------------------------------------
+// Every save goes to an outbox on this phone first (IndexedDB), then to the server in a transaction, one document at a
+// time and in order (app-sync's write queue): nothing waits in the SDK's own offline queue, so a refused save is kept
+// and a save made offline survives a reload. Each kind has a copy on this phone and listens only for documents changed
+// since the last sync (`updatedAt`, stamped by the adapter at commit), so a quiet reopen reads about one document a kind.
+// Saves replace the document as setDoc did (last write wins; there is no conflict screen). A delete writes a `bin`
+// entry in the same transaction, which is how the other phones' delta listeners hear of it.
+const SYNC = 'https://core.anawj.com/sync/0.4.1/index.js';
+// a save on a document another phone deleted brings it back, as setDoc did
+const replace = (_current, record) => clean(record);
+// `bin` entry for a deleted document (items/events/shop/settings; a photo has none: it is read one at a time)
+const binWrite = ({ scope, coll, before, after, at, fields }) => !after && before && KINDS.includes(coll)
+  ? [{ path: ['households', scope, 'bin', `${coll}:${before.id}`], data: { ...leaveEntry(coll, before, at), ...fields } }] : [];
+let leaveEntry = null;
+
+// The engine, once a page: the device copy, the outbox and the queue outlive a switch between households (owner: the
+// household's id), and signing out wipes them.
+let engine = null, owner = '';
+async function sync() {
+  if (engine) return engine;
+  const { F, db } = await sdk(), AS = await import(SYNC);
+  leaveEntry = AS.leaveEntry;
+  const meta = new Set(), codes = new Map();
+  const fs = AS.createFirestoreBackend({
+    sdk: async () => ({ F, db }), path: (hid, kind) => ['households', hid, kind], time: 'iso',
+    merge: Object.fromEntries(ALL_KINDS.map(k => [k, replace])),
+    onCommit: binWrite,
+    onSnapshotMeta: (kind, m) => { for (const fn of meta) fn(kind, m); },
+  });
+  const stores = AS.createStores({ prefix: 'kakihome-sync:', colls: KINDS, metaOnly: ['bin'] });
+  const queue = AS.createWriteQueue({
+    store: AS.createOutbox({ name: 'kakihome-outbox' }), getOwner: () => owner, online: () => globalThis.navigator?.onLine !== false,
+    // writes sent straight to the SDK (copying a household, restoring a backup) keep the sign-out check shut until acknowledged
+    otherPending: async () => !(await Promise.race([F.waitForPendingWrites(db).then(() => true, () => false), new Promise(r => setTimeout(() => r(false), 1500))])),
+    // (the queue keeps a failed save's message only: its code, for the plain words, is kept here)
+    backend: async (hid, kind, record, base, extra) => {
+      try { return await fs.commit(hid, kind, record, base, extra); }
+      catch (e) { codes.set(extra.key, e?.code || ''); throw e; }
+    },
+  });
+  const hub = AS.createSyncHub({
+    openStore: stores.openStore, listen: fs.listen, fetchOne: fs.fetchOne, unstamped: 'full',
+    bin: 'bin', binKinds: Object.fromEntries(KINDS.map(k => [k, k])), unsent: (_hid, coll, id) => queue.unsent(coll, id),
+    onError: e => console.warn('sync', e?.code || e?.message),
+  });
+  AS.replanOnWake(hub);
+  globalThis.addEventListener?.('online', () => queue.kick());
+  engine = { AS, fs, stores, hub, queue, meta, codes, persisted: true, saving: new Set(), resume: null };
+  return engine;
+}
+
+// `onError(err)` hears of a write the server refused; `onSync(state)` of how the saving stands ({ status, count }: app-sync
+// syncStatus, with `confirmed` false until the server has answered once since the page opened).
+export async function openCloud(hid, onError = () => {}, onSync = () => {}) {
   const { F, db } = await sdk();
+  const E = await sync(), { AS, hub, queue } = E;
+  owner = hid;
+  await queue.activate(hid);
+  AS.persistGuard().then(r => { E.persisted = r.persisted || !r.supported; tell(); }, () => {});
   const col = kind => F.collection(db, 'households', hid, kind);
-  const unsubs = [];
+  let heard = false, relistens = 0, cycles = 0, closed = false, cb = null, timer = 0, lastTold = '';
+  const seen = Object.fromEntries(KINDS.map(k => [k, { ready: false }]));
+  const known = Object.fromEntries(KINDS.map(k => [k, new Map()]));   // id -> signature, as last delivered
+  const data = Object.fromEntries(KINDS.map(k => [k, new Map()]));
+  const ready = Object.fromEntries(KINDS.map(k => { let done; const p = new Promise(r => { done = r; }); return [k, { p, done }]; }));
+  const tell = () => {
+    if (closed) return;
+    const mine = queue.entries().filter(x => x.owner === hid);
+    const st = AS.syncStatus({
+      online: globalThis.navigator?.onLine !== false, pending: mine.filter(x => x.state === 'pending').length, attention: AS.attentionCount(mine),
+      persisted: E.persisted, stale: dog.stale(), confirmed: heard, atRiskOnlyOffline: true,
+    });
+    const key = st.state + ':' + st.count;
+    if (key !== lastTold) { lastTold = key; onSync(st); }
+  };
+  // A save the server refused: reported to the app and set aside in the queue, so nothing is sent twice.
+  const reported = new Set();
+  const report = () => {
+    for (const x of queue.entries()) {
+      if (x.owner !== hid || x.state !== 'failed' || reported.has(x.key)) continue;
+      reported.add(x.key);
+      console.warn('save failed', x.kind, E.codes.get(x.key));
+      onError({ code: E.codes.get(x.key) || '', message: x.error });
+      void queue.archive(x.key);
+    }
+  };
+  const offQueue = queue.onChange(() => { report(); tell(); });
+  // One save per document at a time from this page, in the order made (the queue orders a document's saves by the time
+  // each was stored; two stored in the same moment could otherwise swap).
+  const chains = new Map();
+  function enqueue(kind, record) {
+    const k = kind + ':' + record.id;
+    const run = (chains.get(k) || Promise.resolve()).then(() => queue.save(kind, hid, record, null))
+      .then(() => true, e => { if (queue.error()) { console.warn('outbox', e?.message); onError(e); } return false; });
+    const tail = run.finally(() => { if (chains.get(k) === tail) chains.delete(k); E.saving.delete(tail); });
+    chains.set(k, tail); E.saving.add(tail);
+    return run;
+  }
+  // the listeners: each kind's whole list from the engine (this phone's copy, then the server's changes), with this
+  // phone's saves not yet sent laid over it; only what changed since the last delivery goes to the app
+  const sig = d => JSON.stringify(d);
+  let offs = [];
+  function deliver(k, list) {
+    if (closed) return;
+    const now = new Map(queue.overlay(k, hid, list).map(d => [d.id, d]));
+    const docs = [], removed = [];
+    for (const [id, d] of now) { const s = sig(d); if (known[k].get(id) !== s) { known[k].set(id, s); docs.push(d); } }
+    for (const id of [...known[k].keys()]) if (!now.has(id)) { known[k].delete(id); removed.push(id); }
+    data[k] = now;
+    if (!seen[k].ready) { seen[k].ready = true; ready[k].done(); }
+    else if (cb && (docs.length || removed.length)) cb(k, docs, removed);
+    tell();
+  }
+  const startListening = () => { if (!offs.length && !closed) offs = KINDS.map(k => hub.watch(hid, k, list => deliver(k, list))); };
+  const stopListening = () => { offs.splice(0).forEach(off => off()); };
+  // "heard": a snapshot from the server (not this phone's copy) since the page opened
+  const onMeta = (_kind, m) => { if (closed) return; dog.heard(m); if (!m.fromCache && !heard) { heard = true; tell(); } };
+  E.meta.add(onMeta);
+  // The listener watchdog (app-sync): listening again stops the engines and starts them from this phone's copy;
+  // restarting the connection turns the SDK's network off and on (never on while on).
+  const dog = AS.createWatchdog({
+    relisten: why => { console.warn('listeners replaced:', why); relistens++; stopListening(); hub.stopAll().then(() => { startListening(); tell(); }); },
+    cycle: why => { console.warn('connection restarted:', why); cycles++; cycleNet().finally(tell); },
+    online: () => globalThis.navigator?.onLine !== false, quiet: () => queue.pending() === 0,
+  });
+  let cycling = false;
+  async function cycleNet() {
+    if (cycling) return; cycling = true;
+    // (capped: the SDK's switch waits its turn behind a save whose answer is held up)
+    const turn = (async () => { await F.disableNetwork(db); await new Promise(r => setTimeout(r, 300)); await F.enableNetwork(db); })();
+    try { await Promise.race([turn, new Promise(r => setTimeout(r, 4000))]); } catch (e) { console.warn('network restart', e?.code || e?.message); } finally { cycling = false; }
+    turn.catch(() => {});
+  }
+  E.resume = () => { if (!closed) { stopListening(); startListening(); } };
+  startListening();
+  dog.opened();
+  if (globalThis.setInterval) timer = setInterval(() => { if (!closed) dog.check(); }, 3000);
   return {
     kind: 'cloud',
+    // what this phone holds now (its copy, or the server's first answer): each kind's first list, or after a few seconds
+    // whatever there is (a phone that never synced, with no signal); the rest arrives through listen()
     async load() {
-      const out = {};
-      for (const k of KINDS) {
-        const s = await F.getDocs(col(k));
-        out[k] = s.docs.map(d => d.data());
-      }
-      return out;
+      await Promise.all(KINDS.map(k => Promise.race([ready[k].p, new Promise(r => setTimeout(r, 5000))])));
+      for (const k of KINDS) if (!seen[k].ready) { seen[k].ready = true; ready[k].done(); }
+      return Object.fromEntries(KINDS.map(k => [k, [...data[k].values()]]));
     },
-    // Writes go to the phone's copy at once and reach the household when there's signal; don't wait for the server.
-    // The promise (which callers may ignore) says whether the server took it: true, or false when refused.
-    put: (kind, obj) => F.setDoc(F.doc(col(kind), obj.id), clean(obj)).then(() => true, e => { console.warn('save failed', e?.code); onError(e); return false; }),
-    del: (kind, id) => { F.deleteDoc(F.doc(col(kind), id)).catch(e => { console.warn('delete failed', e?.code); onError(e); }); },
+    // Saves go to the outbox at once and reach the household when there's signal; don't wait for the server. The
+    // promise (which callers may ignore) is true once the save is kept on this phone; a refusal comes through onError.
+    put: (kind, obj) => enqueue(kind, clean(obj)),
+    del: (kind, id) => {
+      if (KINDS.includes(kind)) void hub.drop(hid, kind, [id]);
+      enqueue(kind, { id, _deleted: true });
+    },
     // One document (an item's photo, when the item is opened), or null when there is none. Offline it is the
     // phone's copy if it has one; otherwise it throws, and the app tries again next time.
     async get(kind, id) {
@@ -334,17 +501,11 @@ export async function openCloud(hid, onError = () => {}) {
     // Every document of one kind (a backup's photos): only when someone asks for it.
     async list(kind) { return (await F.getDocs(col(kind))).docs.map(d => d.data()); },
     // Write many at once (copying the phone's list up, restoring a backup): at most 400 documents or about 4 MB
-    // to a batch (photos are up to 150 KB each; Firestore takes about 10 MB a request).
+    // to a batch (photos are up to 150 KB each; Firestore takes about 10 MB a request), stamped now.
     putMany: (kind, list) => writeAll(F, db, hid, kind, list),
-    listen(cb) {
-      for (const k of KINDS) {
-        unsubs.push(F.onSnapshot(col(k), s => {
-          const docs = [], removed = [];
-          for (const c of s.docChanges()) (c.type === 'removed' ? removed.push(c.doc.id) : docs.push(c.doc.data()));
-          if (docs.length || removed.length) cb(k, docs, removed);
-        }, e => { console.warn('sync', k, e?.code); onError(e); }));
-      }
-    },
-    close() { unsubs.splice(0).forEach(u => u()); },
+    listen(fn) { cb = fn; startListening(); tell(); },
+    // The listener watchdog: `nudge('resume')` at a moment the phone came back (online, visible, pageshow).
+    nudge(event = '') { if (!offs.length) return false; const a = event ? dog.event() : dog.check(); return !!(a.relisten || a.cycle); },
+    close() { closed = true; clearInterval(timer); timer = 0; stopListening(); offQueue(); E.meta.delete(onMeta); },
   };
 }

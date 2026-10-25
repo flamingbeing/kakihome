@@ -1,6 +1,6 @@
 rules_version = '2';
 // Kaki Home households. Only Google accounts listed in a household's members can read or change it.
-// Deployed on merge to main by .github/workflows/deploy-firestore-rules.yml. Tests: test/run-sync.sh (local emulators).
+// Deployed on merge to main by .github/workflows/deploy-firestore-rules.yml. Tests: test/specs/sync.spec.mjs and engine.spec.mjs (local emulators).
 service cloud.firestore {
   match /databases/{database}/documents {
     function email() { return request.auth.token.email.lower(); }
@@ -28,6 +28,16 @@ service cloud.firestore {
       match /{kind}/{id} {
         allow read, delete: if kind in ['items', 'events', 'shop', 'photos'] && member(hid);
         allow create, update: if kind in ['events', 'shop'] && member(hid);
+      }
+      // The delete feed (app-sync): one entry per deleted item, event, shopping line or setting, written in the same
+      // transaction as the delete, so the other phones' "changed since" listeners hear of it. Members only.
+      match /bin/{id} {
+        allow read, delete: if member(hid);
+        allow create, update: if member(hid)
+          && request.resource.data.keys().hasOnly(['id', 'kind', 'data', 'deletedAt', 'updatedAt'])
+          && request.resource.data.kind in ['items', 'events', 'shop', 'settings']
+          && request.resource.data.id == request.resource.data.kind + ':' + request.resource.data.data.id
+          && request.resource.data.deletedAt is string;
       }
       // An item carries only a small thumbnail (`thumb`, at most 12 KB); its photo is in photos/{id}. Items from
       // before 16 Oct 2026 may still hold a whole photo as `photo`: it may stay as it was or be removed (moved to
