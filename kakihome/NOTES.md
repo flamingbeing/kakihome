@@ -61,7 +61,7 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   (copies items, history, shopping, photos and names into the one kept, checks counts on the server, joins members up
   to 20, then deletes the others; any error stops with nothing deleted; only the owner of a household can merge it
   away). No rules change.
-- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.1` (exact pin,
+- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.1`, now `0.6.0` (exact pin,
   precached whole in `sw.js`) and the update module `0.2.0`. Every save goes to an outbox on the phone, then to the
   server in a transaction (`updatedAt` as an ISO string, stamped by the engine); each kind keeps a copy on the phone and
   listens only for what changed since its last sync, with a full read weekly (`unstamped: 'full'` until every document
@@ -75,6 +75,13 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   and the SDK cache, then the page reloads). The reload after an update waits while a form or sheet is open or saves are
   being sent (`canReload`). `merge.js` is the household merge (two households of one account), not the engine's merge.
   Photos stay one document per item, read when the item is opened, written through the same queue.
+- **Data path wired by app-sync's `createApp`** (25 Oct 2026, app-sync `0.6.0`): `js/cloud.js` keeps only Kaki Home's
+  own parts (the SDK and emulator setup, email sign-in, households and merging, the bin entry, the merge rule, the
+  per-kind lists the app gets) and passes them to one `createApp` call, which brings Google sign-in (popup, redirect
+  when installed), the storage guard, the outbox (now also in the origin's outbox list), the queue, the hub, the
+  listener watchdog, the status line's state, a phone's own unsent saves laid over each list (`watchSaved`, which also
+  fixes a list staying stale after a phone's own save met another phone's change) and sign-out (`forgetDevice`, the SDK
+  cache's 3 s timeout now the engine's). A refused save still goes to `onError` and is set aside.
 - Everything else as in the pantry's `NOTES.md` (repo `flamingbeing/pantry`) (stock as batches, undo over confirm, a household member's change never
   wipes what someone is typing, sign-in on the app's own address, the service worker waits to take over, rules deploy
   on merge with the `KAKIHOME_FIREBASE_PROJECT` variable).
