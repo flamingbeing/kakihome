@@ -301,7 +301,7 @@ export async function removeHousehold(hid) {
 // overwritten without asking). Photos stay last write wins (one blob per item). A delete writes a
 // `bin` entry in the same transaction, which is how the other phones' delta listeners hear of it. createApp also brings
 // the watchdog, the status, the storage guard at sign-in and the sign-out order (forgetDevice).
-const SYNC = 'https://core.anawj.com/sync/0.6.4/index.js';
+const SYNC = 'https://core.anawj.com/sync/0.7.3/index.js';
 // photos only: a save on a photo another phone deleted brings it back, as setDoc did
 const replace = (_current, record) => clean(record);
 // `bin` entry for a deleted document (items/events/shop/settings; a photo has none: it is read one at a time)
