@@ -69,6 +69,7 @@ assert.ok(!/sync\/(?!0\.4\.1)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other 
 assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com/, 'pinned core files are cached as they are fetched');
 // sign-out goes through forgetDevice, saves through the write queue (no direct SDK write or listener left for the data)
 assert.ok(cloud.includes('AS.forgetDevice('), 'sign-out is forgetDevice');
+assert.match(cloud, /clearBackendCache: emulator \? null : \(\) => Promise\.race\(\[fs\.clearCache\(\)/, 'clearing the SDK cache has a timeout (another tab can hold it)');
 assert.ok(!/F\.setDoc\(|F\.deleteDoc\(\s*F\.doc\(col/.test(cloud), 'no direct setDoc/deleteDoc for household data');
 assert.equal((cloud.match(/F\.onSnapshot\(/g) || []).length, 1, 'one onSnapshot left: the household document itself (the collections go through the hub)');
 console.log('kakihome config: ok');

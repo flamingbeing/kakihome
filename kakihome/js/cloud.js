@@ -219,7 +219,7 @@ export async function signOut() {
     const { AS, fs, hub, stores, queue } = engine;
     const r = await AS.forgetDevice({
       hub, stores, queue, proceed: () => queue.flush(1500),
-      clearBackendCache: emulator ? null : fs.clearCache,
+      clearBackendCache: emulator ? null : () => Promise.race([fs.clearCache(), new Promise(r => setTimeout(r, 3000))]),   // (can hang while another tab uses the cache: sign out anyway)
       extra: () => A.signOut(auth),
     });
     if (!r.wiped) { engine.resume?.(); return false; }   // (forgetDevice has stopped the listeners already: start them again)
