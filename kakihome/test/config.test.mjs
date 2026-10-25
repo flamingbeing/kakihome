@@ -111,3 +111,15 @@ console.log('pickHousehold ok');
   assert.equal(userInfo(null), null);
 }
 console.log('email sign-in helpers ok');
+
+// Firebase stays behind the adapter: only js/cloud.js loads the SDK or calls Firestore/Auth (and through it app-sync);
+// every other page module reaches the cloud through the backend that cloud.js returns (store.js interface)
+{
+  const dir = new URL('../js/', import.meta.url);
+  const sdk = /gstatic\.com\/firebasejs|from ['"]firebase|\b(getFirestore|getAuth|initializeApp|setDoc|getDocs?|addDoc|updateDoc|deleteDoc|onSnapshot|writeBatch|runTransaction|signInWith\w*|onAuthStateChanged|createUserWithEmailAndPassword)\s*\(|core\.anawj\.com\/sync\//;
+  const others = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'cloud.js');
+  assert.ok(others.includes('app.js') && others.includes('store.js'), 'the scan sees the page modules');
+  for (const f of others) assert.ok(!sdk.test(fs.readFileSync(new URL(f, dir), 'utf8')), f + ' calls Firebase directly; go through cloud.js');
+  assert.match(fs.readFileSync(new URL('cloud.js', dir), 'utf8'), /core\.anawj\.com\/sync\/\d+\.\d+\.\d+\/index\.js/, 'cloud.js saves through app-sync');
+}
+console.log('Firebase only behind cloud.js ok');
