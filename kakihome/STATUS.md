@@ -14,3 +14,5 @@
   `forgetDevice` at sign-out, no reload mid-edit); details in [NOTES.md](NOTES.md). The rules gain a `bin` collection
   (additive; deployed on merge). Left: events and shopping lines made before this carry no `updatedAt`, so opens read in
   full until a one-off backfill stamps them (not run; the app works the same, only the reads differ).
+- 25 Oct 2026: Firebase stays behind `js/cloud.js`: a test in `test/config.test.mjs` fails if any other page module loads
+  the SDK, calls Firestore or Auth, or imports app-sync itself (none does today; nothing in the app changed).
