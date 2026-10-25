@@ -26,7 +26,7 @@ const S = {
   items: new Map(), events: new Map(), shop: new Map(), settings: new Map(), pics: new Map(),
   backend: null, local: null, mode: DEMO ? 'demo' : 'local', cloud: null, user: null, household: null, allHouseholds: [], lookupFailed: false, creating: false, pending: null, localCount: 0,
   q: '', place: '', sort: prefs.get('sort', 'expiry'),
-  draft: null, dirty: false, pendingRender: false, syncError: false,
+  draft: null, dirty: false, pendingRender: false, syncError: false, sync: null,
   originTab: '#/', backLabel: 'Kaki Home',
 };
 
@@ -239,7 +239,13 @@ const iconBtn = (name, label, act) => `<button type="button" class="ha-bar-btn" 
 function statusLine() {
   if (S.mode === 'demo') return 'Demo: a made-up household of three. Nothing is saved.';
   if (S.mode === 'cloud') {
-    if (!navigator.onLine) return 'Offline. Changes reach the household when there’s signal.';
+    const sy = S.sync, c = sy?.count || 0;
+    if (!navigator.onLine && sy?.state !== 'attention' && sy?.state !== 'at-risk') return c ? `Offline. ${plural(c, 'change')} will reach the household when there’s signal.` : 'Offline. Changes reach the household when there’s signal.';
+    if (sy?.state === 'attention') return `Needs attention: ${plural(c, 'change')} didn’t reach the household`;
+    if (sy?.state === 'at-risk') return `Only on this phone: ${plural(c, 'change')} waiting for signal`;
+    if (sy?.state === 'saving') return `Saving ${plural(c, 'change')}…`;
+    if (sy?.state === 'stale') return 'May be out of date. Checking with the household…';
+    if (sy?.state === 'unknown') return 'Checking with the household…';
     const n = S.household?.members?.length || 1;
     return n > 1 ? `Shared with ${plural(n - 1, 'other person', 'other people')}` : 'Shared household';
   }
@@ -1148,7 +1154,10 @@ async function onClick(e) {
       const ok = await S.cloud.synced(4000);
       haHideToast();
       if (!ok && !(await haConfirm({ title: 'Sign out now?', text: 'Some changes on this phone haven’t reached the household yet (no signal?). Signing out now loses them. Wait for signal, then sign out.', ok: 'Sign out anyway', cancel: 'Wait', danger: true }))) return;
-      try { await S.cloud.signOut(); haToast('Signed out. This phone is back to its own list.'); } catch (err) { haToast(S.cloud.explain(err, 'Signing out')); }
+      try {
+        if (await S.cloud.signOut()) haToast('Signed out. This phone is back to its own list.');
+        else haToast('Some changes just arrived on this phone and haven’t reached the household yet, so you’re still signed in. Try again in a moment.');
+      } catch (err) { haToast(S.cloud.explain(err, 'Signing out')); }
       return;
     }
     case 'hh-create': {
@@ -1335,7 +1344,9 @@ async function useHousehold(h) {
   S.household = h;
   prefs.set('household', h.id);
   S.backend?.close?.();
-  S.backend = await S.cloud.openCloud(h.id, err => { S.syncError = S.cloud.explain(err, 'Saving'); redraw(); });
+  S.sync = null;
+  const me = S.backend = await S.cloud.openCloud(h.id, err => { S.syncError = S.cloud.explain(err, 'Saving'); redraw(); },
+    st => { if (S.backend === me) { S.sync = st; redraw(); } });
   S.mode = 'cloud';
   S.pics.clear();
   loadInto(await S.backend.load());
@@ -1351,7 +1362,7 @@ async function useLocal() {
   unwatch?.(); unwatch = null;
   S.backend = S.local;
   S.mode = 'local';
-  S.household = null; S.allHouseholds = []; S.lookupFailed = false; S.syncError = false;
+  S.household = null; S.allHouseholds = []; S.lookupFailed = false; S.syncError = false; S.sync = null;
   S.pics.clear();
   loadInto(await S.local.load());
   migratePhotos();
@@ -1550,10 +1561,14 @@ async function finishEmailLink() {
 // A new version installs in the background and takes over at once; the page reloads once (register.js). Loaded with
 // import() so a blocked core.anawj.com never stops the app; offline it comes from the saved copy (sw.js SHELL).
 
-const UPDATE = 'https://core.anawj.com/update/0.1.0/register.js';
+const UPDATE = 'https://core.anawj.com/update/0.2.0/register.js';
 let updates = null;
+// The reload after an update waits (and is tried again when the tab is hidden or shown) while someone is filling in a form,
+// a sheet is open, or changes are still being sent.
+const reloadOk = () => !haSheetOpen() && !['add', 'edit'].includes(screen()) && !S.dirty && !S.draft
+  && !document.activeElement?.matches?.('input:not([type=checkbox]):not([type=radio]), textarea') && !['saving', 'attention'].includes(S.sync?.state);
 function watchUpdates() {
-  updates = import(UPDATE).then(async m => { await m.register({ app: 'kakihome', sw: 'sw.js' }); return m; })
+  updates = import(UPDATE).then(async m => { await m.register({ app: 'kakihome', sw: 'sw.js', canReload: reloadOk }); return m; })
     .catch(() => null);   // no offline copy (private window) or the module could not load: the app works without it
 }
 // Settings: the kit's version line and "Get the latest version", with the line read from the running version
@@ -1585,6 +1600,8 @@ async function start() {
   document.addEventListener('submit', onSubmit);
   addEventListener('online', () => { if (S.user && !S.household && S.lookupFailed && S.cloud) handleUser(S.user); else redraw(); });
   addEventListener('offline', redraw);
+  // the listener watchdog looks again when the phone comes back
+  for (const [t, on] of [['online', window], ['pageshow', window], ['visibilitychange', document]]) on.addEventListener(t, () => { if (t !== 'visibilitychange' || document.visibilityState === 'visible') S.backend?.nudge?.('resume'); });
   R = haRouter({
     render: r => draw(r),
     tabOf: r => ['item', 'edit', 'add', 'guide'].includes(r.parts[0]) ? S.originTab : r.hash,

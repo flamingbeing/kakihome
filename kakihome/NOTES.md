@@ -61,6 +61,20 @@ Lasting decisions and how to test. Now: [STATUS.md](STATUS.md). Setup: [SETUP.md
   (copies items, history, shopping, photos and names into the one kept, checks counts on the server, joins members up
   to 20, then deletes the others; any error stops with nothing deleted; only the owner of a household can merge it
   away). No rules change.
+- **Data path on the shared sync engine** (25 Oct 2026; the pantry's pattern, `js/cloud.js`): app-sync `0.4.0` (exact pin,
+  precached whole in `sw.js`) and the update module `0.2.0`. Every save goes to an outbox on the phone, then to the
+  server in a transaction (`updatedAt` as an ISO string, stamped by the engine); each kind keeps a copy on the phone and
+  listens only for what changed since its last sync, with a full read weekly (`unstamped: 'full'` until every document
+  has `updatedAt`: events and shopping lines made before this had none). Saves replace the document as `setDoc` did (last
+  write wins, no conflict screen). A delete writes an entry in `households/{hid}/bin` in the same transaction (rules:
+  members only, fixed shape): a deleted document is not part of a "changed since" listener, so the entry is how other
+  phones hear of it. The one `onSnapshot` left is the household document itself (members, "gone"). `put` returns
+  true once the save is kept on the phone; a refusal comes through `onError`. The status line on Home follows the engine
+  (`syncStatus`, `confirmed` only after a snapshot from the server): Saving N changes, Offline, Needs attention,
+  Checking with the household. Sign-out is `forgetDevice` (refuses while saves are unsent; wipes the copy, the outbox
+  and the SDK cache, then the page reloads). The reload after an update waits while a form or sheet is open or saves are
+  being sent (`canReload`). `merge.js` is the household merge (two households of one account), not the engine's merge.
+  Photos stay one document per item, read when the item is opened, written through the same queue.
 - Everything else as in the pantry's `NOTES.md` (repo `flamingbeing/pantry`) (stock as batches, undo over confirm, a household member's change never
   wipes what someone is typing, sign-in on the app's own address, the service worker waits to take over, rules deploy
   on merge with the `KAKIHOME_FIREBASE_PROJECT` variable).
@@ -73,13 +87,13 @@ node kakihome/test/quick.test.mjs      # Say or type: dates, places, quantities,
 node kakihome/test/tour.test.mjs       # first steps: quick-start list, checklist ticks
 node kakihome/test/photo.test.mjs      # photo sizes: the thumbnail and photo limits
 node kakihome/test/merge.test.mjs      # merging duplicate households: who may, members, names
-node kakihome/test/config.test.mjs     # set-config, sign-in choice, plain-word errors, sw.js rules
+node kakihome/test/config.test.mjs     # set-config, sign-in choice, plain-word errors, sw.js rules, the engine and update pins
 npx playwright test                    # the browser specs (below); SHOTS=<dir> saves screenshots
 ```
 
 The browser specs are Playwright Test (`playwright.config.mjs`, `kakihome/test/specs/`): `app` (the phone walk-through,
 split into independent tests), `welcome` (welcome, guide, first steps), `demo` (every screen at 390/360/320 px), `photos`,
-`signin` (email sign-in) and `sync` (household sharing, photos rules, names, merging, offline: the rules in the local
+`signin` (email sign-in), `engine` (the outbox, the delete feed, the status line, sign-out) and `sync` (household sharing, photos rules, names, merging, offline: the rules in the local
 emulators, project `demo-kakihome`, fake accounts). Run one with `npx playwright test sync`; `PW_NO_EMULATOR=1` skips
 starting the emulators for the specs that don't need them (`app`, `welcome`, `demo`, `photos`).
 Rules for specs: fully parallel, retries 0 (a flake is a bug to fix); every test gets its own static server (a fresh origin)
