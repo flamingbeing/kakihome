@@ -101,16 +101,16 @@ test('an outsider is denied everything; member names have a fixed shape; a membe
     return out;
   }, hid, mumE, strE, `fake-${uid}`);
   expect(denied, 'outsider denied').toEqual(Array(8).fill('permission-denied'));
-  // members' names: only the 'people' document, only id/names/updatedAt, at most 20 names
+  // members' names: only the 'people' document, only id/names/updatedAt/_edits (a map), at most 20 names
   const shapes = await inPage(dad, async (F, hid, dadE) => {
     const db = F.getFirestore(), out = [];
     const many = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`p${i}@example.com`, 'x']));
-    for (const [id, data] of [['other', { id: 'other', names: {} }], ['people', { id: 'people', names: many }], ['people', { id: 'people', names: {}, extra: 1 }], ['people', { id: 'people', names: { [dadE]: 'Dad' }, updatedAt: 'now' }]]) {
+    for (const [id, data] of [['other', { id: 'other', names: {} }], ['people', { id: 'people', names: many }], ['people', { id: 'people', names: {}, extra: 1 }], ['people', { id: 'people', names: { [dadE]: 'Dad' }, updatedAt: 'now' }], ['people', { id: 'people', names: {}, _edits: 'x' }], ['people', { id: 'people', names: { [dadE]: 'Dad' }, updatedAt: 'now', _edits: { names: { by: 'Dad', device: 'phone', at: 1 } } }]]) {
       try { await F.setDoc(F.doc(db, 'households', hid, 'settings', id), data); out.push('ok'); } catch (e) { out.push(e.code); }
     }
     return out;
   }, hid, dadE);
-  expect(shapes, 'settings shapes').toEqual(['permission-denied', 'permission-denied', 'permission-denied', 'ok']);
+  expect(shapes, 'settings shapes').toEqual(['permission-denied', 'permission-denied', 'permission-denied', 'ok', 'permission-denied', 'ok']);
   // dad can't remove the owner, or hand Kaki Home to himself
   const ownerKept = await inPage(dad, async (F, hid, dadE) => {
     const out = [], ref = F.doc(F.getFirestore(), 'households', hid);

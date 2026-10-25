@@ -56,14 +56,15 @@ service cloud.firestore {
           && request.resource.data.data is string
           && request.resource.data.data.size() <= 153600;
       }
-      // shared settings: only the 'people' document (names members give each other, by email), kept small. Each name
-      // is trimmed to 40 characters by the app; rules can't loop over a map, so they cap the count instead.
+      // shared settings: only the 'people' document (names members give each other, by email), kept small; `_edits` is
+      // app-sync's record of who changed each field and when (held conflicts). Each name is trimmed to 40 characters by the app; rules can't loop over a map, so they cap the count instead.
       match /settings/{id} {
         // read as a collection (the app listens to all of settings), so no id check here; writes allow only 'people'
         allow read: if member(hid);
         allow delete: if member(hid) && id == 'people';
         allow create, update: if member(hid) && id == 'people'
-          && request.resource.data.keys().hasOnly(['id', 'names', 'updatedAt'])
+          && request.resource.data.keys().hasOnly(['id', 'names', 'updatedAt', '_edits'])
+          && (!('_edits' in request.resource.data) || request.resource.data._edits is map)
           && request.resource.data.id == 'people'
           && request.resource.data.names is map && request.resource.data.names.size() <= 20;
       }
