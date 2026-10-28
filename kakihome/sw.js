@@ -124,7 +124,6 @@ const SHELL = [
   'https://core.anawj.com/ui/1.0.0-rc.29/settings/file.js',
   'https://core.anawj.com/ui/1.0.0-rc.29/theme/theme.css',
   'https://core.anawj.com/ui/1.0.0-rc.29/ui/ui.css',
-  'https://core.anawj.com/ui/1.0.0-rc.29/theme/glass.css',
   'https://core.anawj.com/ui/1.0.0-rc.29/ui/gestures.css',
   'https://core.anawj.com/ui/1.0.0-rc.29/theme/early.js',
 ];

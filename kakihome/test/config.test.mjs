@@ -69,7 +69,9 @@ const uiVer = map['@core/ui'].match(/\/ui\/([^/]+)\//)[1];
 for (const n of ['ui', 'theme', 'settings']) assert.equal(map['@core/' + n], `https://core.anawj.com/ui/${uiVer}/${n}/index.js`, '@core/' + n + ' on one ui version');
 // the entries and what they import are precached whole (install is all or nothing, and the app opens offline)
 for (const f of ['app.js', 'auth.js', 'sync.js', 'src/module-sync.js', 'src/core.js', 'src/outbox.js']) assert.ok(sw.includes(`'https://core.anawj.com/sync/1.4.0/${f}'`), 'sw.js SHELL has ' + f);
-for (const f of ['ui/index.js', 'theme/index.js', 'settings/index.js', 'theme/theme.css', 'ui/ui.css', 'theme/glass.css', 'theme/early.js']) assert.ok(sw.includes(`'https://core.anawj.com/ui/${uiVer}/${f}'`), 'sw.js SHELL has ' + f);
+for (const f of ['ui/index.js', 'theme/index.js', 'settings/index.js', 'theme/theme.css', 'ui/ui.css', 'theme/early.js']) assert.ok(sw.includes(`'https://core.anawj.com/ui/${uiVer}/${f}'`), 'sw.js SHELL has ' + f);
+// no glass.css: the home kit's solid bars and sheets are the look this app matches (owner, 28 Oct)
+assert.ok(!(sw + html).includes('theme/glass.css'), 'no glass.css');
 assert.ok(!/sync\/(?!1\.4\.0)\d+\.\d+\.\d+\//.test(sw + app + cloud + html), 'no other engine version anywhere');
 assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com\\\/\(sync\|update\|ui\)/, 'pinned core files are cached as they are fetched');
 // the engine is wired by one createApp call with the auth and sync modules; nothing of it is wired by hand here
