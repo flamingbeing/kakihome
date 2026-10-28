@@ -6,17 +6,17 @@
    data-look because the kit's own tokens start from --home-* (theme.css), so before it has painted the two must not
    point at each other. */
 html[data-look] {
-  --home-bg: var(--bg); --home-surface: var(--surface); --home-surface-2: color-mix(in srgb, var(--surface) 60%, var(--bg));
-  --home-fill: color-mix(in srgb, var(--text) 8%, var(--bg)); --home-fill-strong: color-mix(in srgb, var(--text) 14%, var(--bg));
-  --home-ink: var(--text); --home-ink-2: color-mix(in srgb, var(--text) 85%, var(--bg)); --home-muted: var(--muted);
-  --home-line: color-mix(in srgb, var(--line) 35%, transparent); --home-line-strong: color-mix(in srgb, var(--line) 60%, transparent);
+  --home-bg: var(--bg); --home-surface: var(--surface); --home-surface-2: color-mix(in srgb, var(--surface) 50%, var(--bg));
+  --home-fill: color-mix(in srgb, var(--text) 4%, var(--bg)); --home-fill-strong: color-mix(in srgb, var(--text) 8%, var(--bg));
+  --home-ink: var(--text); --home-ink-2: color-mix(in srgb, var(--text) 86%, var(--bg)); --home-muted: var(--muted);
+  --home-line: color-mix(in srgb, var(--line) 24%, var(--surface)); --home-line-strong: var(--line);
   --home-control: var(--line);
   --home-accent: var(--accent); --home-on-accent: var(--on-accent);
-  --home-accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
-  --home-accent-soft-press: color-mix(in srgb, var(--accent) 22%, var(--surface));
-  --home-ok: var(--ok); --home-ok-bg: color-mix(in srgb, var(--ok) 14%, var(--surface));
-  --home-warn: var(--warn); --home-warn-bg: color-mix(in srgb, var(--warn) 16%, var(--surface));
-  --home-bad: var(--danger); --home-bad-bg: color-mix(in srgb, var(--danger) 13%, var(--surface));
+  --home-accent-soft: color-mix(in srgb, var(--accent) 11%, var(--surface));
+  --home-accent-soft-press: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  --home-ok: var(--ok); --home-ok-bg: light-dark(#e6f2ea, color-mix(in srgb, var(--ok) 14%, var(--surface)));
+  --home-warn: var(--warn); --home-warn-bg: light-dark(#fbefd9, color-mix(in srgb, var(--warn) 16%, var(--surface)));
+  --home-bad: var(--danger); --home-bad-bg: light-dark(#fbe8e6, color-mix(in srgb, var(--danger) 13%, var(--surface)));
   --home-bar: var(--glass, var(--surface));
   --home-r-md: var(--radius-button); --home-r-lg: var(--card-r); --home-focus: var(--focus);
 }
@@ -32,7 +32,7 @@ html[data-look] {
 .kh-batch{row-gap:var(--home-s2)}
 .kh-batch-acts{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:var(--home-s2);margin:2px 0 4px}
 .kh-batch-acts .ui-plain{background:var(--home-fill);color:var(--home-ink-2)}
-.kh-actions{margin:calc(-1 * var(--home-s2)) 0 var(--home-s6)}
+html[data-look] .ui-buttons.kh-actions{margin:calc(-1 * var(--home-s2)) 0 var(--home-s6)}
 .kh-cols-label{margin:var(--home-s4) 0 var(--home-s2);color:var(--home-muted);font-size:var(--home-t-small)}
 .kh-cols{height:120px}
 .kh-delete{margin:var(--home-s2) 0 0}
@@ -40,7 +40,7 @@ html[data-look] {
 /* add and edit */
 .kh-finder .ha-search{margin-bottom:var(--home-s2)}
 .kh-finder #kh-sugg{margin:0 0 var(--home-s2)}
-.kh-finder .kh-btn-row{margin:var(--home-s2) 0 0}
+html[data-look] .kh-finder .kh-btn-row{margin:var(--home-s2) 0 0}
 .kh-finder .kh-btn-row>button{flex:0 1 auto}
 .kh-photo-row{display:flex;gap:var(--home-s3);align-items:flex-start}
 .kh-photo-fields{flex:1;min-width:0}
@@ -74,7 +74,7 @@ label.ui-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 
 /* home and lists: the three numbers stay in one row; a name keeps its words whole (the badge moves under it first) */
 .kh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-.kh-goal .ui-card-title{font-size:var(--home-t-title1);font-variant-numeric:tabular-nums}
+html[data-look] .kh-goal .ui-card-title{font-size:var(--home-t-title1);font-variant-numeric:tabular-nums}
 .kh-quick-text{width:100%;min-height:6.5em;resize:vertical}
 .kh-mic.is-on{background:var(--home-bad);color:#fff}
 .kh-item .ui-row-main{flex-basis:8em}
@@ -144,3 +144,61 @@ label.ui-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .kh-card-kicker{margin:0 0 2px;color:var(--muted);font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
 /* the home kit's main column already has the side gutter, so kit lists and cards sit flush in it */
 .ha-main{--list-inset:0}
+
+/* Look match (owner, 28 Oct): the kit's content parts drawn to the home kit's measures, so the screens read as they
+   did on the home kit: its type scale (no sentence under 16 px), 16 px gutters and corners, rows that wrap, 50 px
+   buttons. Sizes hold in every look; the look's own character (A: a serif title, round controls, list shadow) gives
+   way to the home kit's only in the default look A, so another look still shows itself. */
+html[data-look] .ui-section{margin:0 0 var(--home-s6)}
+html[data-look] .ui-section-head{gap:var(--home-s3);padding:0 var(--home-s4) 6px;font-size:var(--home-t-label);font-weight:600;line-height:1.4;letter-spacing:.05em}
+html[data-look] .ui-section-head :is(a,button){font-size:var(--home-t-small)}
+html[data-look] .ui-section-foot{padding:6px var(--home-s4) 0;font-size:var(--home-t-small)}
+html[data-look] .ui-list{border-radius:var(--home-r-lg)}
+html[data-look] .ui-row{flex-wrap:wrap;gap:var(--home-s3);min-height:50px;padding:10px var(--home-s4);font-size:var(--home-t-body);line-height:1.35}
+html[data-look] :is(.ui-list>li+li>.ui-row,.ui-row+.ui-row){background-size:calc(100% - var(--home-s4)) 1px,auto}
+html[data-look] :is(.ui-list>li+li>.ui-row,.ui-row+.ui-row):has(>.ui-row-lead){background-size:calc(100% - 58px) 1px,auto}
+html[data-look] :is(.ui-list>li+li>.ui-row,.ui-row+.ui-row):has(>.ui-row-thumb){background-size:calc(100% - 72px) 1px,auto}
+html[data-look] .ui-row-main{flex:1 1 5em;display:flex;flex-direction:column;gap:1px}
+html[data-look] .ui-row-sub{font-size:var(--home-t-small);line-height:1.4;overflow-wrap:anywhere}
+html[data-look] :is(.ui-row-lead,.ui-row-thumb){border-radius:var(--home-r-sm)}
+html[data-look] .ui-row-trail{gap:var(--home-s2)}
+html[data-look] .ui-row-value{font-size:var(--home-t-body)}
+html[data-look] .ui-row-chevron{color:var(--home-line-strong)}
+html[data-look] .ui-card{margin:0 0 var(--home-s4);padding:var(--home-s4);border-radius:var(--home-r-lg)}
+html[data-look] .ui-card-title{margin:0 0 var(--home-s1);font-size:var(--home-t-title2);letter-spacing:-.012em}
+html[data-look] :is(.ui-card-text,.ui-stat-label,.ui-empty-text){font-size:var(--home-t-small)}
+html[data-look] .ui-card-actions{gap:var(--home-s2);margin-top:var(--home-s4)}
+html[data-look] .ui-stats{gap:var(--home-s2);margin:0 0 var(--home-s4)}
+html[data-look] .ui-stat{padding:var(--home-s3) var(--home-s4);border-radius:var(--home-r-lg)}
+html[data-look] .ui-stat-value{font-size:var(--home-t-title1);letter-spacing:-.02em}
+html[data-look] .ui-badge{border-radius:var(--home-r-xs);font-size:var(--home-t-label);line-height:1}
+html[data-look] .ui-badge:not([data-tone]){color:var(--home-ink-2)}
+html[data-look] .ui-empty{gap:var(--home-s2);padding:var(--home-s10) var(--home-s6)}
+html[data-look] .ui-empty-title{font-size:var(--home-t-title2);letter-spacing:-.01em}
+html[data-look] .ui-empty-text{margin:0 0 var(--home-s3)}
+html[data-look] .ui-chips{gap:var(--home-s2);margin:var(--home-s2) 0 var(--home-s3)}
+html[data-look] .ui-chips>button.ui-chip{min-height:34px;margin-block:5px;padding:0 14px;font-size:var(--home-t-small);font-weight:500;gap:6px}
+html[data-look] .ui-chips>button.ui-chip[aria-pressed="true"]{font-weight:600}
+html[data-look] :is(.ui-fill,.ui-tint,.ui-plain):not([data-size]){min-height:50px;border:0;padding:var(--home-s2) var(--home-s5);gap:var(--home-s2);font-size:var(--home-t-body);font-weight:600;line-height:1.2}
+html[data-look] :is(.ui-fill,.ui-tint,.ui-plain) .ha-icon{width:20px;height:20px}
+html[data-look] :is(button,a)[data-size="small"]{min-height:36px;line-height:1.2;border:0;padding:0 var(--home-s3);border-radius:var(--home-r-full);font-size:var(--home-t-small);font-weight:600}
+html[data-look] :is(.ui-fill,.ui-tint,.ui-plain):is([disabled],[aria-disabled="true"]){opacity:.45;cursor:default}
+html[data-look] .ui-buttons{display:grid;gap:var(--home-s2);margin:var(--home-s3) 0}
+html[data-look] .kh-btn-row{gap:var(--home-s2);margin:var(--home-s3) 0}
+html[data-look] .kh-card-kicker{font-size:var(--home-t-label)}
+html[data-look="a"]{--look-font-head:inherit;--list-shadow:none;--radius-button:12px;--card-r:16px}
+html[data-look] .kh-batch{row-gap:var(--home-s2)}
+@media not (forced-colors:active){html[data-look] .ui-list{border:0}}
+html[data-look] .ha-stepper button{padding:0;min-height:0}
+/* Toast: the home kit's dark pill. The kit's Dismiss X is hidden as the original had none; toasts still time out */
+html[data-look] .toast{min-height:48px;max-width:min(560px,calc(100vw - 2 * var(--home-gutter)));gap:var(--home-s2);padding:4px 4px 4px var(--home-s4);border:0;border-radius:var(--home-r-md);background:var(--home-toast);color:var(--home-on-toast);box-shadow:var(--home-shadow-float);font-size:var(--home-t-small);line-height:1.35}
+html[data-look] .toast>span{flex:1;padding:8px 0}
+html[data-look] .toast .toast-action{min-height:44px;padding:0 14px;border-radius:var(--home-r-sm);color:var(--home-toast-action)}
+html[data-look] .toast .toast-action:active{background:rgb(255 255 255 / .12)}
+html[data-look] .toast>button:not(.toast-action){display:none}
+html[data-look] .toast:not(:has(.toast-action)){padding-right:var(--home-s4)}
+html[data-look] .ui-tint:not(:active){background:var(--home-accent-soft)}
+html[data-look] .ha-sheet-body .ui-list{margin-inline:0}
+html[data-look] .kh-addline button[data-size="small"]{min-height:44px;padding-inline:var(--home-s4)}
+html[data-look] .toasts{inset-inline:var(--home-gutter)}
+html[data-look] .ha-has-tabbar>.toasts{left:calc(var(--ha-rail,0px) + var(--home-gutter))}
