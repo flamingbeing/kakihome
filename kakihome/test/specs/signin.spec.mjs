@@ -87,11 +87,11 @@ test('password: create account, verify by email, sign out and in, wrong password
   expect((await S(a)).household).toBeNull();
   // "I've verified" too early: asked to tap the link first
   await a.click('[data-act="verified"]');
-  await expect(a.locator('.ha-toast', { hasText: 'Not yet' })).toBeVisible();
+  await expect(a.locator('.toast', { hasText: 'Not yet' })).toBeVisible();
   expect((await S(a)).household).toBeNull();
   // Send it again
   await a.click('[data-act="verify-resend"]');
-  await expect(a.locator('.ha-toast', { hasText: 'Sent again' })).toBeVisible();
+  await expect(a.locator('.toast', { hasText: 'Sent again' })).toBeVisible();
   await expect.poll(async () => (await oob.codes(email, 'VERIFY_EMAIL')).length, { message: 'sent again' }).toBe(2);
   // tap the link, come back, "I've verified": the household opens
   await oob.tap((await oob.codes(email, 'VERIFY_EMAIL')).at(-1));
@@ -156,7 +156,7 @@ test('email link: asked for here, opened here, then used a second time', async (
   await expect(sheet(b).locator('.ha-sheet-title', { hasText: 'Finish signing in' })).toBeVisible();   // nothing saved any more: asks
   await b.fill('#kh-em-email', email);
   await b.press('#kh-em-email', 'Enter');
-  await expect(b.locator('.ha-toast', { hasText: /expired or was already used|isn’t valid any more/ })).toBeVisible();
+  await expect(b.locator('.toast', { hasText: /expired or was already used|isn’t valid any more/ })).toBeVisible();
   expect(await b.evaluate(() => window.__kakihome.S.user)).toBeNull();
   await expect.poll(() => new URL(b.url()).search).toBe('?emulator');
 });

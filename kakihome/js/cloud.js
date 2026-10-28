@@ -443,6 +443,8 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}, onCo
     // The listener watchdog: `nudge('resume')` at a moment the phone came back (online, visible, pageshow).
     nudge: (event = '') => app.sync.nudge(event),
     resolve: (key, choice) => app.sync.resolve(key, choice),
+    // the engine's sync api, for the UI kit's conflictSheet
+    sync: app.sync,
     close() { closed = true; stopListening(); offStatus(); offHeld(); if (refused === onError) refused = null; },
   };
 }

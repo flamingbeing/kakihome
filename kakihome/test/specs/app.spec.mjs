@@ -8,7 +8,7 @@ import { open, hash, go, toast, sheet, welcomeSheet, expectCard, ymdPlus, SEEN, 
 
 const section = (p, id) => p.locator('#' + id).locator('xpath=..');
 const stock = p => p.locator('#h-stock .ha-num');
-const undo = p => toast(p).locator('.ha-toast-action').click();
+const undo = p => toast(p).locator('.toast-action').click();
 const download = async (page, selector) => {
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click(selector)]);
   return JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));

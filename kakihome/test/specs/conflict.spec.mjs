@@ -44,11 +44,11 @@ test('different fields merge without asking; the same field is held on the phone
   await expect(dad.locator('[data-act="conflicts-open"]'), 'only the phone that sent it second is asked').toHaveCount(0);
   expect((await server(fsAdmin, hid, 'a')).name, 'nothing overwritten').toBe('Light soy');
   await mum.click('[data-act="conflicts-open"]');
-  const sheet = mum.locator('dialog.ha-sheet[open]');
-  await expect(sheet.locator('.ha-sheet-title')).toHaveText('Changed on another phone');
-  await expect(sheet.locator('.kh-side').first()).toContainText('Soy sauce');
-  await expect(sheet.locator('.kh-side').nth(1)).toContainText('Light soy');
-  await sheet.locator('[data-cf="mine"]').click();
+  const sheet = mum.locator('#kh-conflicts[open]');
+  await expect(sheet.locator('h2')).toHaveText('Changed on another device');
+  await expect(sheet.locator('.ui-sides > div').first()).toContainText('Soy sauce');
+  await expect(sheet.locator('.ui-sides > div').nth(1)).toContainText('Light soy');
+  await sheet.getByRole('button', { name: 'Keep mine' }).click();
   await expect.poll(async () => { const s = await server(fsAdmin, hid, 'a'); return [s.name, s.location]; }).toEqual(['Soy sauce', 'Fridge']);
   await expect(mum.locator('[data-act="conflicts-open"]')).toHaveCount(0);
   await expect.poll(() => dad.evaluate(() => window.__kakihome.S.items.get('a')?.name)).toBe('Soy sauce');
@@ -62,7 +62,7 @@ test('keep theirs drops this phone’s clashing change and keeps its other chang
   await expect.poll(async () => (await server(fsAdmin, hid, 'a'))?.name).toBe('Light soy');
   await reconnect(mum);
   await mum.click('[data-act="conflicts-open"]');
-  await mum.locator('dialog.ha-sheet[open] [data-cf="theirs"]').click();
+  await mum.locator('#kh-conflicts[open]').getByRole('button', { name: 'Keep theirs' }).click();
   await expect.poll(async () => { const s = await server(fsAdmin, hid, 'a'); return [s.name, s.location]; }).toEqual(['Light soy', 'Fridge']);
   await expect(mum.locator('[data-act="conflicts-open"]')).toHaveCount(0);
 });
