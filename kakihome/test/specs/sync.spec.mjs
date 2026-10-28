@@ -40,7 +40,7 @@ test('start a household, add someone by email, name them, invite them; both phon
   await mum.click('#kh-member-add button[type=submit]');
   await expect(mum.locator('#main .ha-row-title', { hasText: dadE })).toBeVisible();
   // an invite from Mum's own mail app: the toast offers it, and Dad's card keeps it for later
-  await expect(mum.locator('.ha-toast-action', { hasText: 'Email invite' })).toBeVisible();
+  await expect(mum.locator('.toast-action', { hasText: 'Email invite' })).toBeVisible();
   await mum.click(`[data-act="person"][data-v="${dadE}"]`);
   const card = sheetOpen(mum);
   await expect(card.locator('.ha-sheet-title')).toHaveText('Household member');
@@ -61,7 +61,7 @@ test('start a household, add someone by email, name them, invite them; both phon
   await expect(sheetOpen(mum)).toHaveCount(0);
   await expect(mum.locator('#kh-member-email')).toHaveValue('');
   await mum.click('[data-act="sample"]');
-  await expect(mum.locator('.ha-toast', { hasText: 'sample items' })).toBeVisible();
+  await expect(mum.locator('.toast', { hasText: 'sample items' })).toBeVisible();
 
   const dad = await person(phone, 'dad', dadE);
   await expect(dad.locator('#main .ha-row-title', { hasText: 'Our home' })).toBeVisible();
@@ -221,7 +221,7 @@ test('names never hide anyone', async ({ phone, fsAdmin, uid }) => {
     await expect(sheetOpen(p)).toBeVisible();
     await p.fill('#kh-person-name', n);
     await sheetOpen(p).locator('button[type=submit]').click();
-    await expect(p.locator('.ha-toast', { hasText: `Saved: ${n}` })).toBeVisible();
+    await expect(p.locator('.toast', { hasText: `Saved: ${n}` })).toBeVisible();
   };
   await nameSelf(mum, mumE, 'Jun');
   expect(await listed(mum), 'mum still lists everyone right after saving her own name').toEqual(everyone);
@@ -285,7 +285,7 @@ test('merge two households of one email: the bigger one is kept, everything of t
   await expect(sheet).toContainText('2 people');
   await sheet.locator('[data-pm="go"]').click();
   await twin.locator('dialog[open] button', { hasText: /^Merge$/ }).click();
-  await expect(twin.locator('.ha-toast', { hasText: 'Merged' })).toBeVisible();
+  await expect(twin.locator('.toast', { hasText: 'Merged' })).toBeVisible();
   await expect.poll(() => fsAdmin.get(`households/${A}`), { message: 'the other household is gone' }).toBeNull();
   for (const k of [...KINDS5, 'settings']) await expect.poll(async () => (await fsAdmin.list(`households/${A}/${k}`)).length, { message: 'A ' + k + ' deleted' }).toBe(0);
   const kept = await fsAdmin.get(`households/${B}`);
@@ -353,7 +353,7 @@ test('no signal: “can’t tell” is never “no household”, and nothing is 
   await expect(off.locator('[data-act="hh-check"]'), 'a Try again instead').toHaveCount(1);
   expect(await fsAdmin.owned(offE), 'nothing was created').toBe(1);
   await off.click('[data-act="hh-check"]');
-  await expect(off.locator('.ha-toast')).toBeVisible();
+  await expect(off.locator('.toast')).toBeVisible();
   await expect(off.locator('[data-act="hh-create"]'), 'still offline: still no Start').toHaveCount(0);
   await off.context().unroute(/:8085\//);
   await off.click('[data-act="hh-check"]');

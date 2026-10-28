@@ -19,7 +19,7 @@ export async function open(phone, { w = 390, h = 844, url = '/kakihome/', name =
   return page;
 }
 export const hash = page => new URL(page.url()).hash;
-export const toast = page => page.locator('.ha-toast.is-visible');
+export const toast = page => page.locator('.toasts .toast');
 export const sheet = page => page.locator('dialog.ha-sheet[open]');
 export const welcomeSheet = page => page.locator('dialog.ha-sheet.kh-wsheet[open]');
 export const cardTitle = page => welcomeSheet(page).locator('.kh-wtitle');

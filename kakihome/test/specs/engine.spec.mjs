@@ -102,7 +102,7 @@ test('signing out waits while saves are unsent, then wipes this phone’s copy a
   await mum.click('[data-act="signout"]');
   await expect(ask).toBeVisible({ timeout: 15_000 });
   await ask.getByRole('button', { name: 'Sign out anyway' }).click();
-  await expect(mum.locator('.ha-toast.is-visible', { hasText: 'still signed in' })).toBeVisible({ timeout: 15_000 });
+  await expect(mum.locator('.toasts .toast', { hasText: 'still signed in' })).toBeVisible({ timeout: 15_000 });
   expect(await mum.evaluate(() => window.__kakihome.S.user?.email), 'still signed in after the refusal').toBe(mumE);
   await mum.context().unroute(BLOCK);
   await fsAdmin.put(`households/${hid}/items/c`, { id: 'c', name: 'From elsewhere', batches: [], updatedAt: '2026-10-25T00:00:00.000Z' });

@@ -12,14 +12,19 @@ import { starterChoices, tourTasks } from './tour.js';
 import * as MG from './merge.js';
 import { firebaseConfig } from '../config.js';
 import {
-  haRouter, haGo, haBack, haSheet, haCloseSheet, haSheetOpen, haToast, haHideToast, haStepper, haVersion,
+  haRouter, haGo, haBack, haSheet, haCloseSheet, haSheetOpen, haStepper, haVersion,
   haIcon, haEsc as esc, haAnnounce, haLargeTitle,
 } from 'https://design.flamingbeing.com/v1/app.js';
-import { confirmModal } from '@core/ui';
+import { confirmModal, toaster, conflictSheet as kitConflictSheet } from '@core/ui';
 
-// Notes stay on the home kit's toast for now (the kit toaster's Dismiss button misses the tap-size rule and sits under the
-// home tab bar); questions are the UI kit's confirmModal.
-const toast = haToast, hideToast = haHideToast;
+// Notes are the UI kit's toaster (one at a time, as before; it sits above the home tab bar through --ui-toast-bottom in
+// kakihome.css); questions are the UI kit's confirmModal.
+const toasts = toaster(document.body);
+let hideToast = () => {};
+const toast = (text, { action = '', onAction, ms } = {}) => {
+  hideToast();
+  hideToast = toasts.show(text, { ms: ms ?? (action ? 6000 : 4000), action: action ? { label: action, run: () => onAction?.() } : undefined });
+};
 const confirmAsk = ({ title, text, ok, cancel, danger }) => confirmModal(text, { title, danger, yes: ok, labels: cancel ? { cancel } : {} });
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -849,57 +854,29 @@ function afterSheet() {
 
 // ---- Held conflicts ---------------------------------------------------------------------------------------------
 // A save that met a change to the same field made on another phone is held on the phone that sent it second (app-sync
-// held conflicts): nothing is overwritten until its person chooses. Both versions side by side, each with when it
-// changed (SGT) and who changed it (name, device).
-let conflictSheet = null;
+// held conflicts): nothing is overwritten until its person chooses. The UI kit's conflictSheet shows both versions side
+// by side, each with when it changed (SGT) and who changed it (name, device), in the household's words (FIELD). Its own
+// button stays hidden (kakihome.css): Home's alert and the status line are the way in.
 const FIELD = { name: 'Name', batches: 'Stock', location: 'Where it’s kept', notes: 'Notes', brand: 'Brand', note: 'Note', text: 'Text', done: 'Done', names: 'Names' };
-const fieldLabel = path => FIELD[path.split('.')[0]] || path;
-function sayValue(v, deleted) {
-  if (deleted) return '(deleted)';
+function sayValue(v) {
   if (v == null || v === '') return '(empty)';
   if (typeof v === 'boolean') return v ? 'Yes' : 'No';
   if (Array.isArray(v) && v.every(b => b && typeof b === 'object' && 'qty' in b)) return v.map(b => `${b.qty}${b.expiry ? ` · use by ${b.expiry}` : ''}`).join('; ') || '(none)';
   if (typeof v === 'object') return Object.values(v).filter(x => typeof x !== 'object').map(String).join(', ') || JSON.stringify(v).slice(0, 120);
   return String(v);
 }
-const sayWho = side => [side.when, [side.by, side.device].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'time and author unknown';
-const sayWhat = c => { const r = c.mine.value || c.theirs.value || {}; return r.name || r.title || r.text || c.id; };
-function drawConflicts() {
-  const body = $('.ha-sheet-body', conflictSheet.el);
-  if (!S.conflicts.length) { const el = conflictSheet.el; conflictSheet = null; haCloseSheet(el); toast('All chosen.'); return; }
-  const side = (title, sd, text) => `<div class="kh-side"><h3>${esc(title)}</h3><p class="kh-side-v kh-break">${esc(text)}</p><p class="ha-section-footer">${esc(sayWho(sd))}</p></div>`;
-  body.innerHTML = `<p class="kh-em-lead">Someone changed the same thing on another phone. Choose which to keep; nothing is lost until you do. Changes to other parts are kept either way.</p>
-    <ul class="ha-list">${S.conflicts.map((c, i) => {
-      const whole = c.deleted.mine || c.deleted.theirs || c.fields.length !== 1;
-      const rows = c.fields.length > 1 && !c.deleted.mine && !c.deleted.theirs
-        ? c.fields.map((f, j) => `<div class="kh-field" data-i="${i}" data-j="${j}"><p class="ha-row-sub">${esc(fieldLabel(f.path))}</p>
-            <div class="kh-sides">${side('Yours', f.mine, sayValue(f.mine.value))}${side('Other phone', f.theirs, sayValue(f.theirs.value))}</div>
-            <div class="kh-row"><button type="button" class="ha-btn ha-btn--small" data-cf="pick" data-i="${i}" data-j="${j}" data-w="mine">Mine</button><button type="button" class="ha-btn ha-btn--small" data-cf="pick" data-i="${i}" data-j="${j}" data-w="theirs">Theirs</button></div></div>`).join('')
-          + `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-cf="picks" data-i="${i}" disabled>Keep these choices</button>`
-        : `<div class="kh-sides">${side('Yours', c.mine, c.fields[0] ? sayValue(c.fields[0].mine.value) : sayValue(c.mine.value && sayWhat(c), c.deleted.mine))}${side('Other phone', c.theirs, c.fields[0] ? sayValue(c.fields[0].theirs.value) : sayValue(c.theirs.value && sayWhat(c), c.deleted.theirs))}</div>
-          <div class="kh-row"><button type="button" class="ha-btn ha-btn--primary" data-cf="mine" data-i="${i}">Keep mine</button><button type="button" class="ha-btn" data-cf="theirs" data-i="${i}">Keep theirs</button></div>`;
-      return `<li class="kh-conflict"><p class="ha-row-title kh-break">${esc(sayWhat(c))}${c.fields.length === 1 ? ` · ${esc(fieldLabel(c.fields[0].path))}` : ''}</p>${rows}</li>`;
-    }).join('')}</ul><p class="ha-section-footer" id="kh-cf-msg" role="status"></p>`;
+const sayRecord = r => !r || typeof r !== 'object' ? sayValue(r)
+  : [r.name || r.title || r.text, r.batches && sayValue(r.batches), r.location].filter(Boolean).join(' · ') || sayValue(r);
+let stopConflicts = null;
+function mountConflicts(sync) {
+  if (stopConflicts || !sync) return;
+  const host = document.createElement('div'); host.id = 'kh-conflicts'; document.body.append(host);
+  const stop = kitConflictSheet(host, { sync, idPrefix: 'kh-', text: sayRecord,
+    fields: Object.fromEntries(Object.entries(FIELD).map(([k, label]) => [k, { label, format: sayValue }])) });
+  stopConflicts = () => { stop(); host.remove(); stopConflicts = null; };
 }
 function openConflicts() {
-  if (!S.conflicts.length || conflictSheet) return;
-  const picks = new Map();   // key -> { [path]: 'mine' | 'theirs' }
-  const s = conflictSheet = haSheet({ title: 'Changed on another phone', closeLabel: 'Close', grey: true, body: '', onClose: () => { conflictSheet = null; afterSheet(); } });
-  drawConflicts();
-  s.el.addEventListener('click', async e => {
-    const b = e.target.closest('[data-cf]'); if (!b || b.disabled || !S.backend?.resolve) return;
-    const c = S.conflicts[Number(b.dataset.i)]; if (!c) return;
-    if (b.dataset.cf === 'pick') {
-      const p = picks.get(c.key) || {}; p[c.fields[Number(b.dataset.j)].path] = b.dataset.w; picks.set(c.key, p);
-      for (const x of s.el.querySelectorAll(`[data-cf="pick"][data-i="${b.dataset.i}"][data-j="${b.dataset.j}"]`)) x.setAttribute('aria-pressed', String(x === b));
-      const go = s.el.querySelector(`[data-cf="picks"][data-i="${b.dataset.i}"]`); if (go) go.disabled = c.fields.some(f => !p[f.path]);
-      return;
-    }
-    const choice = b.dataset.cf === 'picks' ? picks.get(c.key) : b.dataset.cf;
-    for (const x of s.el.querySelectorAll('button')) x.disabled = true;
-    try { await S.backend.resolve(c.key, choice); picks.delete(c.key); }
-    catch (err) { const m = $('#kh-cf-msg', s.el); if (m) m.textContent = 'That didn’t go through. Try again.'; console.warn('resolve', err?.code || err); if (conflictSheet) drawConflicts(); }
-  });
+  if (S.conflicts.length) document.getElementById('kh-attention')?.click();
 }
 
 // ---- Shopping ---------------------------------------------------------------------------------------------------
@@ -1413,7 +1390,8 @@ async function useHousehold(h) {
   S.sync = null; S.conflicts = [];
   const me = S.backend = await S.cloud.openCloud(h.id, err => { S.syncError = S.cloud.explain(err, 'Saving'); redraw(); },
     st => { if (S.backend === me) { S.sync = st; redraw(); } },
-    list => { if (S.backend === me) { S.conflicts = list; if (conflictSheet) drawConflicts(); redraw(); } });
+    list => { if (S.backend === me) { const had = S.conflicts.length; S.conflicts = list; if (had && !list.length) toast('All chosen.'); redraw(); } });
+  mountConflicts(me.sync);
   S.mode = 'cloud';
   S.pics.clear();
   loadInto(await S.backend.load());
@@ -1426,6 +1404,7 @@ async function useHousehold(h) {
 }
 async function useLocal() {
   S.backend?.close?.();
+  stopConflicts?.();
   unwatch?.(); unwatch = null;
   S.backend = S.local;
   S.mode = 'local';

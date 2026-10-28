@@ -27,7 +27,7 @@ for (const [w, h] of [[390, 844], [360, 780], [320, 640]]) {
       const has = () => page.evaluate(id => window.__kakihome.S.items.has(id), itemId);
       await page.click('[data-act="delete"]');
       await expect.poll(has, { message: 'delete removes it' }).toBe(false);
-      await toast(page).locator('.ha-toast-action').click();
+      await toast(page).locator('.toast-action').click();
       await expect.poll(has, { message: 'Undo restores it' }).toBe(true);
       // 200% text: still no sideways scroll
       await page.evaluate(() => { document.documentElement.style.fontSize = '212.5%'; });

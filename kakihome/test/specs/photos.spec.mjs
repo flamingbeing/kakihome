@@ -116,7 +116,7 @@ test('a camera picture: thumbnail on the item, photo on its own, read only when 
   const again = await idb(page, 'photos/' + id);
   await page.click('[data-act="delete"]');
   await expect.poll(async () => (await idb(page, 'photos/' + id)) === null && (await idb(page, 'items/' + id)) === null, { message: 'deleting the item deletes its photo' }).toBe(true);
-  await toast(page).locator('.ha-toast-action').click();
+  await toast(page).locator('.toast-action').click();
   await expect.poll(async () => (await idb(page, 'photos/' + id))?.data === again.data && !!(await idb(page, 'items/' + id))?.hasPhoto, { message: 'Undo brings the item and its photo back' }).toBe(true);
   await go(page, '#/item/' + id);
   await page.click('[data-act="delete"]');

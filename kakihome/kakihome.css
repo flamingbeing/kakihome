@@ -124,13 +124,14 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .kh-em-lead{margin:0 0 var(--home-s4);line-height:1.45}
 #kh-em-form .ha-field-error{margin:0 0 var(--home-s3)}
 .kh-conflict-btn{width:100%;text-align:left;font:inherit;border:0;cursor:pointer}
-.kh-conflict{padding:var(--home-s3) 0;border-bottom:1px solid var(--home-line,rgba(128,128,128,.25))}
-.kh-sides{display:grid;grid-template-columns:1fr 1fr;gap:var(--home-s3);margin:var(--home-s2) 0}
-.kh-side h3{font-size:1rem;margin:0 0 .25rem}.kh-side-v{margin:0}
-.kh-row{display:flex;gap:var(--home-s2);flex-wrap:wrap;margin:var(--home-s2) 0}
-.kh-row .ha-btn[aria-pressed=true]{outline:2px solid currentColor}
 
 /* This device (Settings): the kit's theme switch, set in the grouped-list look of its neighbours */
 #kh-theme .theme-switch{display:grid;gap:var(--home-s3);padding:var(--home-s4);border-radius:var(--home-r-lg);background:var(--home-surface)}
 #kh-theme .theme-switch>label{display:flex;align-items:center;justify-content:space-between;gap:var(--home-s3);color:var(--home-ink)}
 #kh-theme .theme-switch select{max-width:60%;min-height:44px;color:var(--home-ink)}
+
+/* The UI kit's toasts (js/app.js) sit where the home kit's did: over the tab bar on a phone, low on the page beside the
+   side rail from 768 px. Its conflict sheet's own button stays hidden: Home's alert opens the sheet. */
+.ha-has-tabbar{--ui-toast-bottom:calc(var(--ha-tab-h) + var(--ha-safe-b) + var(--home-s3))}
+@media (min-width:768px){.ha-has-tabbar{--ui-toast-bottom:calc(var(--home-s6) + var(--ha-safe-b))}}
+#kh-attention{display:none}
