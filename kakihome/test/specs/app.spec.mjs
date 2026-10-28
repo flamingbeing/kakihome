@@ -30,12 +30,12 @@ test('first open: the welcome once per phone, then the empty screens', async ({ 
   await expect(page.locator('#h-tour'), 'first open: Getting started on Home').toHaveCount(1);
   await page.click('[data-act="tour-hide"]');
   await expect(page.locator('#h-tour'), 'Hide this list hides it').toHaveCount(0);
-  await expect(page.locator('.ha-empty-title', { hasText: 'Nothing here yet' }), 'empty pantry says so').toBeVisible();
-  await expect(page.locator('.ha-empty a[href="#/guide"]'), 'empty Home links to the guide').toBeVisible();
+  await expect(page.locator('.ui-empty-title', { hasText: 'Nothing here yet' }), 'empty pantry says so').toBeVisible();
+  await expect(page.locator('.ui-empty a[href="#/guide"]'), 'empty Home links to the guide').toBeVisible();
   await go(page, '#/shop');
-  await expect(section(page, 'h-shop').locator('.ha-section-footer'), 'an empty shopping list says how things get there').toContainText('come here by themselves');
+  await expect(section(page, 'h-shop').locator('.ui-section-foot'), 'an empty shopping list says how things get there').toContainText('come here by themselves');
   await go(page, '#/settings');
-  if (await page.locator('[data-act="signin"]').count()) await expect(section(page, 'h-family').locator('.ha-section-footer'), 'signed out: one line on why to sign in').toContainText(/^Sign in to share/);
+  if (await page.locator('[data-act="signin"]').count()) await expect(section(page, 'h-family').locator('.ui-section-foot'), 'signed out: one line on why to sign in').toContainText(/^Sign in to share/);
   await page.click('.ha-tabbar a[href="#/"]');
   await expect(page.locator('.ha-tab[aria-current="page"]'), 'Pantry tab current').toHaveAttribute('href', '#/');
   await axe(page, 'empty home');
@@ -67,7 +67,7 @@ test('add from the catalogue, open one, Used 1 and Undo, Bought more, the shoppi
   // open one, then Used 1 and Undo
   await page.locator('[data-act="open"]').first().click();
   await expect(toast(page), 'open says so').toContainText('Opened 1 Light soy sauce');
-  await expect(page.locator('.kh-batch .ha-row-title', { hasText: '1 opened' }), 'an opened batch appears').toHaveCount(1);
+  await expect(page.locator('.kh-batch .kh-row-title', { hasText: '1 opened' }), 'an opened batch appears').toHaveCount(1);
   await page.locator('.kh-batch', { hasText: '1 opened' }).locator('[data-act="use"]').click();
   await expect(stock(page), 'Used 1 takes one out').toHaveText('1');
   await undo(page);
@@ -104,9 +104,9 @@ test('something expiring in 2 days is under Use soon; an empty name is refused; 
   await page.click('#kh-save');
   await expect(page.locator('h1')).toHaveText('Baby spinach');
   await page.click('.ha-tabbar a[href="#/"]');
-  const row = section(page, 'h-use-soon').locator('.ha-row', { hasText: 'Baby spinach' });
+  const row = section(page, 'h-use-soon').locator('.ui-row', { hasText: 'Baby spinach' });
   await expect(row, 'expiring item under Use soon').toHaveCount(1);
-  await expect(row.locator('.ha-badge--warn'), 'with a 2 days badge').toHaveText('2 days');
+  await expect(row.locator('.ui-badge[data-tone="warn"]'), 'with a 2 days badge').toHaveText('2 days');
   // an empty name is refused in words
   await page.click('.ha-tab--action');
   await page.click('#kh-save');
@@ -123,19 +123,19 @@ test('shopping: a line by hand, tick an item from your stock, remove a line and 
   await page.click('.ha-tabbar a[href="#/shop"]');
   await page.fill('#kh-shop-text', 'Bananas');
   await page.click('#kh-shop-add button[type=submit]');
-  await expect(page.locator('#kh-shop .ha-row-title', { hasText: 'Bananas' }), 'a line added by hand').toHaveCount(1);
+  await expect(page.locator('#kh-shop .kh-row-title', { hasText: 'Bananas' }), 'a line added by hand').toHaveCount(1);
   await page.locator('#kh-shop label', { hasText: 'Kikkoman Light soy sauce' }).locator('input').check();
   await expect(sheet(page).locator('.ha-sheet-title'), 'ticking an item from your stock asks what was bought').toHaveText('Bought more');
   await page.click('dialog.ha-sheet[open] [data-act="date"]:has-text("1 month")');
-  await page.click('dialog.ha-sheet[open] .ha-sheet-foot .ha-btn--primary');
+  await page.click('dialog.ha-sheet[open] .ha-sheet-foot .ui-fill');
   await expect(sheet(page), 'the sheet closes').toHaveCount(0);
   await expect(toast(page), 'stock added').toContainText('Added 1 Light soy sauce');
   await expect(page.locator('#kh-shop label.is-done', { hasText: 'Light soy sauce' }), 'ticked line struck through').toHaveCount(1);
   // remove a line, then Undo
   await page.click('#kh-shop [data-act="shop-del"][aria-label="Remove Bananas"]');
-  await expect(page.locator('#kh-shop .ha-row-title', { hasText: 'Bananas' }), 'bin removes a line').toHaveCount(0);
+  await expect(page.locator('#kh-shop .kh-row-title', { hasText: 'Bananas' }), 'bin removes a line').toHaveCount(0);
   await undo(page);
-  await expect(page.locator('#kh-shop .ha-row-title', { hasText: 'Bananas' }), 'Undo brings it back').toHaveCount(1);
+  await expect(page.locator('#kh-shop .kh-row-title', { hasText: 'Bananas' }), 'Undo brings it back').toHaveCount(1);
   await axe(page, 'shopping');
   await shot(page, '05-shop', true);
 });
@@ -143,9 +143,9 @@ test('shopping: a line by hand, tick an item from your stock, remove a line and 
 test('sample items: the expired one, the dashboard, and binning an expired item', async ({ phone, axe }) => {
   const page = await open(phone, { init: SEEN });
   await addSamples(page);
-  await expect(section(page, 'h-expired').locator('.ha-row', { hasText: 'Wholemeal bread' }), 'expired sample under Expired').toHaveCount(1);
+  await expect(section(page, 'h-expired').locator('.ui-row', { hasText: 'Wholemeal bread' }), 'expired sample under Expired').toHaveCount(1);
   // the dashboard: four tiles and the main measure
-  await expect(page.locator('.kh-stats .ha-stat'), 'four tiles on Home').toHaveCount(4);
+  await expect(page.locator('.kh-stats .ui-stat'), 'four tiles on Home').toHaveCount(4);
   await expect(page.locator('.kh-stats'), 'tile: items at home').toContainText('Items at home');
   await expect(page.locator('.kh-goal'), 'the used-before-expiry card').toBeVisible();
   await expect(page.locator('#h-recent'), 'Recently added').toHaveCount(1);
@@ -153,7 +153,7 @@ test('sample items: the expired one, the dashboard, and binning an expired item'
   await shot(page, '06-home', true);
 
   // binning the expired bread counts as expired
-  await section(page, 'h-expired').locator('a.ha-row', { hasText: 'Wholemeal bread' }).click();
+  await section(page, 'h-expired').locator('a.ui-row', { hasText: 'Wholemeal bread' }).click();
   await page.locator('[data-act="toss"]').first().click();
   await expect(toast(page), 'binning past its date says expired').toContainText('(expired)');
   await expect(section(page, 'h-history'), 'history says expired').toContainText('Expired, thrown away');
@@ -186,17 +186,17 @@ test('items: search, place chips, sort, open one and come back', async ({ phone,
   await addSamples(page);
   await page.click('.ha-tabbar a[href="#/items"]');
   await page.fill('#kh-q', 'kaya');
-  await expect(page.locator('#kh-items-list .ha-row'), 'search finds one').toHaveCount(1);
+  await expect(page.locator('#kh-items-list .ui-row'), 'search finds one').toHaveCount(1);
   await page.click('[data-act="q-clear"]');
   await page.click('[data-act="place"][data-v="Fridge"]');
-  await expect(page.locator('#kh-items-list .ha-row-sub', { hasText: 'Kitchen cabinet' }), 'place chip filters').toHaveCount(0);
+  await expect(page.locator('#kh-items-list .ui-row-sub', { hasText: 'Kitchen cabinet' }), 'place chip filters').toHaveCount(0);
   await page.click('.ha-seg:has(input[value="category"])');
-  await expect.poll(() => page.locator('#kh-items-list .ha-section').count(), { message: 'category sort groups the list' }).toBeGreaterThan(1);
+  await expect.poll(() => page.locator('#kh-items-list .ui-section').count(), { message: 'category sort groups the list' }).toBeGreaterThan(1);
   await page.click('[data-act="place"][data-v=""]');
   await axe(page, 'items');
   await shot(page, '07-items', true);
   // open an item from the list, back returns to Items
-  await page.locator('#kh-items-list a.ha-row', { hasText: 'Kaya' }).click();
+  await page.locator('#kh-items-list a.ui-row', { hasText: 'Kaya' }).click();
   await expect(page.locator('.ha-back span'), 'back button names Items').toHaveText('Items');
   await page.click('.ha-back');
   await expect(page, 'back button returns to Items').toHaveURL(/#\/items$/);
@@ -214,7 +214,7 @@ test('Settings: expiring soon, the guide, the welcome again from Settings', asyn
   await expect(page.locator('h1'), 'the guide opens from Settings').toHaveText('How to use Kaki Home');
   await expect(page.locator('.ha-back span'), 'its back button names Settings').toHaveText('Settings');
   await expect(page.locator('.ha-tab[aria-current="page"]'), 'Settings stays the current tab').toHaveAttribute('href', '#/settings');
-  await expect(page.locator('#main .ha-section'), 'eight guide sections').toHaveCount(8);
+  await expect(page.locator('#main .ui-section'), 'eight guide sections').toHaveCount(8);
   await page.goBack();
   await expect(page, 'back returns to Settings').toHaveURL(/#\/settings$/);
   await page.click('#main a[href="#/guide"]');
@@ -242,7 +242,7 @@ test('the backup, the version lines, no signal, and offline', async ({ phone, se
   for (const line of ['Bananas', 'Eggs']) {
     await page.fill('#kh-shop-text', line);
     await page.click('#kh-shop-add button[type=submit]');
-    await expect(page.locator('#kh-shop .ha-row-title', { hasText: line })).toHaveCount(1);
+    await expect(page.locator('#kh-shop .kh-row-title', { hasText: line })).toHaveCount(1);
   }
   await go(page, '#/settings');
   const items = await page.evaluate(() => window.__kakihome.S.items.size);
@@ -273,7 +273,7 @@ test('the backup, the version lines, no signal, and offline', async ({ phone, se
   await page.reload();
   await expect(page.locator('.ha-large-title')).toBeVisible();
   await go(page, '#/items');
-  await expect(page.locator('#kh-items-list .ha-row', { hasText: 'Kaya' }), 'offline reload shows Kaki Home').toHaveCount(1);
+  await expect(page.locator('#kh-items-list .ui-row', { hasText: 'Kaya' }), 'offline reload shows Kaki Home').toHaveCount(1);
   await expect(page.locator('.ha-tabbar'), 'offline: the kit styles load from the cache').toHaveCSS('position', 'fixed');
   // the kit comes from another address: its sprite is put in the page, so tab and row icons draw (also offline)
   await page.locator('[data-ha-sprite] symbol').first().waitFor({ state: 'attached' });

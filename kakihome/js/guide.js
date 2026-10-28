@@ -19,10 +19,10 @@ export function installed() {
   try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch { return false; }
 }
 
-const row = (iconName, title, sub = '', trail = '') => `<li><div class="ha-row"><span class="ha-row-icon">${icon(iconName)}</span>
-  <span class="ha-row-body"><span class="ha-row-title">${title}</span>${sub ? `<span class="ha-row-sub">${sub}</span>` : ''}</span>${trail}</div></li>`;
-const plainRow = (title, sub = '', trail = '') => `<li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title">${title}</span>${sub ? `<span class="ha-row-sub">${sub}</span>` : ''}</span>${trail ? `<span class="ha-row-trail">${trail}</span>` : ''}</div></li>`;
-const list = rows => `<ul class="ha-list">${rows.join('')}</ul>`;
+const row = (iconName, title, sub = '', trail = '') => `<li><div class="ui-row"><span class="ui-row-lead">${icon(iconName)}</span>
+  <span class="ui-row-main"><span class="kh-row-title">${title}</span>${sub ? `<span class="ui-row-sub">${sub}</span>` : ''}</span>${trail}</div></li>`;
+const plainRow = (title, sub = '', trail = '') => `<li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title">${title}</span>${sub ? `<span class="ui-row-sub">${sub}</span>` : ''}</span>${trail ? `<span class="ui-row-trail">${trail}</span>` : ''}</div></li>`;
+const list = rows => `<ul class="ui-list">${rows.join('')}</ul>`;
 
 // ---------- the welcome ----------
 
@@ -94,9 +94,9 @@ export function openWelcome({ invited = false, signedIn = false, save = true, on
   let at = 0;
   const s = haSheet({
     title: 'Getting started', closeLabel: 'Skip', grey: true, detent: 'large',
-    lead: `<button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-kh-w="prev" hidden>Back</button>`,
+    lead: `<button type="button" class="ui-plain" data-size="small" data-kh-w="prev" hidden>Back</button>`,
     body: `<div class="kh-welcome" id="kh-welcome"></div>`,
-    footer: `<div class="kh-dots" aria-hidden="true">${ids.map(() => '<span class="kh-dot"></span>').join('')}</div><div class="ha-btn-stack kh-wbtns" id="kh-wbtns"></div>`,
+    footer: `<div class="kh-dots" aria-hidden="true">${ids.map(() => '<span class="kh-dot"></span>').join('')}</div><div class="ui-buttons kh-wbtns" id="kh-wbtns"></div>`,
     onClose: v => { if (save) markWelcomed(); onDone?.(v); },
   });
   const el = s.el;
@@ -113,12 +113,12 @@ export function openWelcome({ invited = false, signedIn = false, save = true, on
     prev.hidden = at === 0;
     skip.textContent = last ? 'Close' : 'Skip';
     btns.innerHTML = !last
-      ? `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-kh-w="next">Next</button>`
+      ? `<button type="button" class="ui-fill ui-wide" data-kh-w="next">Next</button>`
       : invited
-        ? `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-kh-w="signin">Go to sign in</button>
-           <button type="button" class="ha-btn ha-btn--plain ha-btn--block" data-kh-w="done">Look around first</button>`
-        : `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-kh-w="start">Pick what you have</button>
-           <button type="button" class="ha-btn ha-btn--plain ha-btn--block" data-kh-w="done">Look around first</button>`;
+        ? `<button type="button" class="ui-fill ui-wide" data-kh-w="signin">Go to sign in</button>
+           <button type="button" class="ui-plain ui-wide" data-kh-w="done">Look around first</button>`
+        : `<button type="button" class="ui-fill ui-wide" data-kh-w="start">Pick what you have</button>
+           <button type="button" class="ui-plain ui-wide" data-kh-w="done">Look around first</button>`;
     el.querySelector('.ha-sheet-body').scrollTop = 0;
     if (focus) { el.querySelector('.kh-wtitle').focus({ preventScroll: true }); }
   };
@@ -150,9 +150,9 @@ export function openWelcome({ invited = false, signedIn = false, save = true, on
 
 // ---------- the guide screen ----------
 
-const badge = (text, tone = '') => `<span class="ha-badge${tone ? ' ha-badge--' + tone : ''}">${esc(text)}</span>`;
+const badge = (text, tone = '') => `<span class="ui-badge"${tone ? ` data-tone="${tone === 'bad' ? 'danger' : tone}"` : ''}>${esc(text)}</span>`;
 function section(id, title, rows, footer = '') {
-  return `<section class="ha-section" aria-labelledby="h-g-${id}"><h2 class="ha-section-header" id="h-g-${id}"><span>${esc(title)}</span></h2>${list(rows)}${footer ? `<p class="ha-section-footer">${footer}</p>` : ''}</section>`;
+  return `<section class="ui-section" aria-labelledby="h-g-${id}"><h2 class="ui-section-head" id="h-g-${id}"><span>${esc(title)}</span></h2>${list(rows)}${footer ? `<p class="ui-section-foot">${footer}</p>` : ''}</section>`;
 }
 
 export function viewGuide() {
@@ -204,5 +204,5 @@ export function viewGuide() {
       row('cloud', 'No signal', 'It still works. Changes reach the household when you’re back online.'),
       row('refresh', 'Looks out of date?', 'At the bottom of Settings, tap Get the latest version. Your items are kept.'),
     ])}
-    <ul class="ha-list kh-gagain"><li><button type="button" class="ha-row ha-row--action ha-row--center" data-act="welcome"><span class="ha-row-body"><span class="ha-row-title">Show the welcome again</span></span></button></li></ul>`;
+    <ul class="ui-list kh-gagain"><li><button type="button" class="ui-row" data-tone="action" data-align="center" data-act="welcome"><span class="ui-row-main"><span class="kh-row-title">Show the welcome again</span></span></button></li></ul>`;
 }

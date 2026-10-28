@@ -49,7 +49,7 @@ const CAT_ICON = {
   'Kitchen & paper': 'roll', Toiletries: 'droplet', 'Medicine & first aid': 'pill', Pet: 'paw', Other: 'box',
 };
 const icon = (name, o) => haIcon(name, o);
-const chevron = () => icon('chevron-right', { cls: 'ha-row-chevron' });
+const chevron = () => icon('chevron-right', { cls: 'ui-row-chevron' });
 
 // Names the household gave its members (settings/people: { names: { email: name } }), shared with everyone in it.
 const names = () => S.settings.get('people')?.names || {};
@@ -195,28 +195,28 @@ function apply(res, msg) {
 
 // ---- small pieces --------------------------------------------------------------------------------------------------
 
-function thumb(it, cls = 'ha-row-thumb') {
+function thumb(it, cls = 'ui-row-thumb') {
   const src = thumbSrc(it);
   return src ? `<img class="${cls}" src="${esc(src)}" alt="">` : `<span class="${cls}">${icon(CAT_ICON[it.category] || 'box')}</span>`;
 }
 function badge(date) {
   const b = L.shortLabel(date, today());
   if (!b.text) return '';
-  const tone = { bad: ' ha-badge--bad', warn: ' ha-badge--warn' }[b.tone] || '';
-  return `<span class="ha-badge${tone}">${esc(b.text)}</span>`;
+  const tone = { bad: ' data-tone="danger"', warn: ' data-tone="warn"' }[b.tone] || '';
+  return `<span class="ui-badge"${tone}>${esc(b.text)}</span>`;
 }
 const subOf = it => [it.brand, it.size].filter(Boolean).map(esc).join(' · ');
 function itemRow(it, { sub, trail } = {}) {
   const q = L.totalQty(it);
   const s = sub ?? [q ? `${q} left` : 'None left', esc(it.location || '')].filter(Boolean).join(' · ');
   const t = trail ?? badge(L.nextUseBy(it));
-  return `<li><a class="ha-row kh-item" href="#/item/${esc(it.id)}">${thumb(it)}
-    <span class="ha-row-body"><span class="ha-row-title">${esc(it.name)}</span>${s ? `<span class="ha-row-sub">${s}</span>` : ''}</span>
-    ${t ? `<span class="ha-row-trail">${t}</span>` : ''}${chevron()}</a></li>`;
+  return `<li><a class="ui-row kh-item" href="#/item/${esc(it.id)}">${thumb(it)}
+    <span class="ui-row-main"><span class="kh-row-title">${esc(it.name)}</span>${s ? `<span class="ui-row-sub">${s}</span>` : ''}</span>
+    ${t ? `<span class="ui-row-trail">${t}</span>` : ''}${chevron()}</a></li>`;
 }
 function section(title, body, { count = '', action = '', footer = '', id = '' } = {}) {
   const hid = 'h-' + (id || title.toLowerCase().replace(/[^a-z]+/g, '-'));
-  return `<section class="ha-section" aria-labelledby="${hid}"><h2 class="ha-section-header" id="${hid}"><span>${esc(title)}</span>${action || (count !== '' ? `<span class="ha-num">${count}</span>` : '')}</h2>${body}${footer ? `<p class="ha-section-footer">${footer}</p>` : ''}</section>`;
+  return `<section class="ui-section" aria-labelledby="${hid}"><h2 class="ui-section-head" id="${hid}"><span>${esc(title)}</span>${action || (count !== '' ? `<span class="ha-num">${count}</span>` : '')}</h2>${body}${footer ? `<p class="ui-section-foot">${footer}</p>` : ''}</section>`;
 }
 function fmt(ymd) {
   const d = L.parseYmd(ymd);
@@ -228,8 +228,8 @@ function quickDates() {
   const t = today();
   return [['1 week', L.addDays(t, 7)], ['1 month', L.addDays(t, 30)], ['3 months', L.addDays(t, 91)], ['6 months', L.addDays(t, 182)], ['1 year', L.addDays(t, 365)]];
 }
-const dateChips = (name, value) => `<div class="ha-chips ha-chips--wrap kh-dates" role="group" aria-label="Quick dates" data-for="${name}">${quickDates().map(([l, v]) =>
-  `<button type="button" class="ha-chip" aria-pressed="${v === value}" data-act="date" data-v="${v}">${l}</button>`).join('')}<button type="button" class="ha-chip" aria-pressed="false" data-act="date" data-v="">No date</button></div>`;
+const dateChips = (name, value) => `<div class="ui-chips kh-dates" data-wrap="on" role="group" aria-label="Quick dates" data-for="${name}">${quickDates().map(([l, v]) =>
+  `<button type="button" class="ui-chip" aria-pressed="${v === value}" data-act="date" data-v="${v}">${l}</button>`).join('')}<button type="button" class="ui-chip" aria-pressed="false" data-act="date" data-v="">No date</button></div>`;
 const shopQuery = it => [it.brand, it.name].filter(Boolean).join(' ').replace(/\(.*?\)/g, '').trim();
 const onList = id => [...S.shop.values()].some(m => m.itemId === id && !m.done);
 
@@ -271,14 +271,14 @@ function viewHome() {
   if (S.mode === 'cloud' && S.allHouseholds.length > 1) h += `<a class="ha-panel kh-alert" href="#/settings">${icon('alert')}<span>You’re in more than one household. Merge them in Settings.</span></a>`;
   h += viewTour();
   if (!all.length) {
-    return h + `<div class="ha-card ha-empty">
-      <span class="ha-empty-icon">${icon('box')}</span>
-      <p class="ha-empty-title">Nothing here yet</p>
-      <p class="ha-empty-text">Add what’s in the fridge and cupboards. Kaki Home then shows what to use first and what to buy.</p>
-      <button type="button" class="ha-btn ha-btn--primary" data-act="start">Pick what you have</button>
-      <button type="button" class="ha-btn ha-btn--secondary" data-act="go-add">Add one item</button>
-      <button type="button" class="ha-btn ha-btn--plain" data-act="sample">Try it with sample items</button>
-      <a class="ha-btn ha-btn--plain" href="#/guide">How to use Kaki Home</a>
+    return h + `<div class="ui-card ui-empty">
+      <span class="ui-empty-icon">${icon('box')}</span>
+      <p class="ui-empty-title">Nothing here yet</p>
+      <p class="ui-empty-text">Add what’s in the fridge and cupboards. Kaki Home then shows what to use first and what to buy.</p>
+      <button type="button" class="ui-fill" data-act="start">Pick what you have</button>
+      <button type="button" class="ui-tint" data-act="go-add">Add one item</button>
+      <button type="button" class="ui-plain" data-act="sample">Try it with sample items</button>
+      <a class="ui-plain" href="#/guide">How to use Kaki Home</a>
     </div>`;
   }
   const t = today();
@@ -291,36 +291,36 @@ function viewHome() {
   const opened = all.filter(it => !listed.has(it.id) && (it.batches || []).some(b => b.openedAt && b.qty > 0));
   const m = L.monthStats([...S.events.values()], t.slice(0, 7));
   const tile = (n, label, href) => href
-    ? `<a class="ha-stat kh-stat" href="${href}"><span class="ha-stat-value">${n}</span><span class="ha-stat-label">${label}</span></a>`
-    : `<div class="ha-stat"><span class="ha-stat-value">${n}</span><span class="ha-stat-label">${label}</span></div>`;
-  h += `<div class="ha-stats kh-stats" aria-label="Summary">
+    ? `<a class="ui-stat kh-stat" href="${href}"><span class="ui-stat-value">${n}</span><span class="ui-stat-label">${label}</span></a>`
+    : `<div class="ui-stat"><span class="ui-stat-value">${n}</span><span class="ui-stat-label">${label}</span></div>`;
+  h += `<div class="ui-stats kh-stats" aria-label="Summary">
     ${tile(all.length, 'Items at home', '#/items')}
     ${tile(expired.length + soon.length, `Expiring within ${esc(SOON[soonDays()] || soonDays() + ' days')}`, '#/')}
     ${tile(low.length, 'Low in stock', '#/shop')}
     ${tile(fresh.length, 'Added this week')}
   </div>`;
   // the main measure: things used up before their date this month
-  h += `<div class="ha-card kh-goal" aria-labelledby="kh-goal-h"><p class="ha-card-kicker" id="kh-goal-h">Used before expiry this month</p>
-    <p class="ha-card-title">${m.saved}</p>
-    <p class="ha-card-text">${m.wasted ? `${plural(m.wasted, 'thing')} thrown away${m.expired ? `, ${m.expired} of them past their date` : ''}.` : 'Nothing thrown away this month.'}</p></div>`;
-  if (expired.length) h += section('Expired', `<ul class="ha-list">${expired.map(x => itemRow(x.item)).join('')}</ul>`, { count: expired.length, footer: 'Used it or binned it? Open the item and tap Used 1 or Bin 1.' });
-  h += section('Use soon', soon.length ? `<ul class="ha-list">${soon.map(x => itemRow(x.item)).join('')}</ul>` : '', { count: soon.length || '', footer: soon.length ? `Within the next ${esc(SOON[soonDays()] || soonDays() + ' days')}. Use these first.` : `Nothing runs out of date in the next ${esc(SOON[soonDays()] || soonDays() + ' days')}.` });
-  if (opened.length) h += section('Opened', `<ul class="ha-list">${opened.map(it => itemRow(it)).join('')}</ul>`, { count: opened.length });
+  h += `<div class="ui-card kh-goal" aria-labelledby="kh-goal-h"><p class="kh-card-kicker" id="kh-goal-h">Used before expiry this month</p>
+    <p class="ui-card-title">${m.saved}</p>
+    <p class="ui-card-text">${m.wasted ? `${plural(m.wasted, 'thing')} thrown away${m.expired ? `, ${m.expired} of them past their date` : ''}.` : 'Nothing thrown away this month.'}</p></div>`;
+  if (expired.length) h += section('Expired', `<ul class="ui-list">${expired.map(x => itemRow(x.item)).join('')}</ul>`, { count: expired.length, footer: 'Used it or binned it? Open the item and tap Used 1 or Bin 1.' });
+  h += section('Use soon', soon.length ? `<ul class="ui-list">${soon.map(x => itemRow(x.item)).join('')}</ul>` : '', { count: soon.length || '', footer: soon.length ? `Within the next ${esc(SOON[soonDays()] || soonDays() + ' days')}. Use these first.` : `Nothing runs out of date in the next ${esc(SOON[soonDays()] || soonDays() + ' days')}.` });
+  if (opened.length) h += section('Opened', `<ul class="ui-list">${opened.map(it => itemRow(it)).join('')}</ul>`, { count: opened.length });
   if (buy.length) {
-    h += section('Running low', `<ul class="ha-list">${buy.slice(0, 5).map(b => itemRow(b.item, { sub: esc(L.whyText(b, t)), trail: '' })).join('')}</ul>`,
+    h += section('Running low', `<ul class="ui-list">${buy.slice(0, 5).map(b => itemRow(b.item, { sub: esc(L.whyText(b, t)), trail: '' })).join('')}</ul>`,
       { id: 'low', action: `<a href="#/shop">Shopping list</a>`, footer: buy.length > 5 ? `${buy.length - 5} more on the shopping list.` : '' });
   }
   if (fresh.length) {
-    h += section('Recently added', `<ul class="ha-list">${fresh.slice(0, 5).map(it => itemRow(it, { sub: esc(['Added', it.createdBy ? `by ${it.createdBy}` : '', fmtTime(it.createdAt)].filter(Boolean).join(' ')) })).join('')}</ul>`,
+    h += section('Recently added', `<ul class="ui-list">${fresh.slice(0, 5).map(it => itemRow(it, { sub: esc(['Added', it.createdBy ? `by ${it.createdBy}` : '', fmtTime(it.createdAt)].filter(Boolean).join(' ')) })).join('')}</ul>`,
       { id: 'recent', footer: fresh.length > 5 ? `${fresh.length - 5} more this week.` : '' });
   }
-  const mrow = (ic, cls, title, n) => `<li><div class="ha-row"><span class="ha-row-icon${cls}">${icon(ic)}</span><span class="ha-row-body"><span class="ha-row-title">${title}</span></span><span class="ha-row-value">${n}</span></div></li>`;
-  h += section('This month', `<ul class="ha-list">
+  const mrow = (ic, cls, title, n) => `<li><div class="ui-row"><span class="ui-row-lead"${cls}>${icon(ic)}</span><span class="ui-row-main"><span class="kh-row-title">${title}</span></span><span class="ui-row-value">${n}</span></div></li>`;
+  h += section('This month', `<ul class="ui-list">
     ${mrow('check', '', 'Used up', m.used)}
     ${mrow('clock', '', 'Used before expiry', m.saved)}
-    ${mrow('cart', ' ha-row-icon--grey', 'Bought', m.bought)}
-    ${mrow('alert', ' ha-row-icon--bad', 'Expired', m.expired)}
-    ${mrow('trash', ' ha-row-icon--bad', 'Thrown away (all)', m.wasted)}
+    ${mrow('cart', ' data-tone="grey"', 'Bought', m.bought)}
+    ${mrow('alert', ' data-tone="danger"', 'Expired', m.expired)}
+    ${mrow('trash', ' data-tone="danger"', 'Thrown away (all)', m.wasted)}
   </ul>`, { id: 'month', footer: 'Binning something past its date counts as expired.' });
   return h;
 }
@@ -338,17 +338,17 @@ function viewTour() {
   if (!tourOn()) return '';
   const list = tasks(), done = list.filter(t => t.done).length;
   if (done === list.length) {
-    return section('Getting started', `<div class="ha-card kh-tour-done"><p class="ha-card-title">All set</p>
-      <p class="ha-card-text">You know your way around. The guide in Settings has the rest.</p>
-      <button type="button" class="ha-btn ha-btn--secondary" data-act="tour-hide">Hide this</button></div>`, { id: 'tour' });
+    return section('Getting started', `<div class="ui-card kh-tour-done"><p class="ui-card-title">All set</p>
+      <p class="ui-card-text">You know your way around. The guide in Settings has the rest.</p>
+      <button type="button" class="ui-tint" data-act="tour-hide">Hide this</button></div>`, { id: 'tour' });
   }
-  const row = t => `<li><div class="ha-row kh-tour-row${t.done ? ' is-done' : ''}">
+  const row = t => `<li><div class="ui-row kh-tour-row${t.done ? ' is-done' : ''}">
       <span class="kh-tour-mark" aria-hidden="true">${t.done ? icon('check') : ''}</span>
-      <span class="ha-row-body"><span class="ha-row-title">${esc(t.title)}<span class="ha-sr">${t.done ? ', done' : ', to do'}</span></span><span class="ha-row-sub">${esc(t.sub)}</span></span>
-      ${t.done ? '' : `<span class="ha-row-trail"><button type="button" class="ha-btn ha-btn--small" data-act="tour-show" data-task="${t.id}" aria-label="Show me: ${esc(t.title)}">Show me</button></span>`}
+      <span class="ui-row-main"><span class="kh-row-title">${esc(t.title)}<span class="ha-sr">${t.done ? ', done' : ', to do'}</span></span><span class="ui-row-sub">${esc(t.sub)}</span></span>
+      ${t.done ? '' : `<span class="ui-row-trail"><button type="button" class="ui-tint" data-size="small" data-act="tour-show" data-task="${t.id}" aria-label="Show me: ${esc(t.title)}">Show me</button></span>`}
     </div></li>`;
-  return section('Getting started', `<ul class="ha-list kh-tour">${list.map(row).join('')}</ul>
-    <p class="kh-tour-foot"><button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-act="tour-hide">Hide this list</button></p>`,
+  return section('Getting started', `<ul class="ui-list kh-tour">${list.map(row).join('')}</ul>
+    <p class="kh-tour-foot"><button type="button" class="ui-plain" data-size="small" data-act="tour-hide">Hide this list</button></p>`,
     { id: 'tour', count: `${done} of ${list.length}` });
 }
 // Point at a button on the screen just drawn: scroll it into view, ring it for a few seconds, focus it.
@@ -375,10 +375,10 @@ function showMe(task) {
   if (task === 'install') {
     return haSheet({
       title: 'On your home screen', closeLabel: 'Done', grey: true,
-      body: `<ul class="ha-list">
-        <li><div class="ha-row"><span class="ha-row-icon">${icon('share')}</span><span class="ha-row-body"><span class="ha-row-title">iPhone</span><span class="ha-row-sub">In Safari, tap Share (the square with an arrow), then Add to Home Screen.</span></span></div></li>
-        <li><div class="ha-row"><span class="ha-row-icon">${icon('plus')}</span><span class="ha-row-body"><span class="ha-row-title">Android</span><span class="ha-row-sub">In Chrome, tap the menu (three dots), then Add to home screen or Install app.</span></span></div></li>
-      </ul><p class="ha-section-footer">It then opens like an app, full screen, and works without signal.</p>`,
+      body: `<ul class="ui-list">
+        <li><div class="ui-row"><span class="ui-row-lead">${icon('share')}</span><span class="ui-row-main"><span class="kh-row-title">iPhone</span><span class="ui-row-sub">In Safari, tap Share (the square with an arrow), then Add to Home Screen.</span></span></div></li>
+        <li><div class="ui-row"><span class="ui-row-lead">${icon('plus')}</span><span class="ui-row-main"><span class="kh-row-title">Android</span><span class="ui-row-sub">In Chrome, tap the menu (three dots), then Add to home screen or Install app.</span></span></div></li>
+      </ul><p class="ui-section-foot">It then opens like an app, full screen, and works without signal.</p>`,
       onClose: () => { flag('installSeen'); afterSheet(); redraw(); },
     });
   }
@@ -393,21 +393,21 @@ function openStarter() {
   const groups = [...new Set(choices.map(c => c.group))];
   const chip = c => {
     const at = have.has(L.norm(`${c.cat.brand} ${c.cat.name}`));
-    return `<button type="button" class="ha-chip" aria-pressed="false" data-k="${esc(c.key)}"${at ? ' disabled' : ''}>${esc(c.cat.name.replace(/ \(.*\)$/, ''))}${at ? ' <span class="ha-chip-count">at home</span>' : ''}</button>`;
+    return `<button type="button" class="ui-chip" aria-pressed="false" data-k="${esc(c.key)}"${at ? ' disabled' : ''}>${esc(c.cat.name.replace(/ \(.*\)$/, ''))}${at ? ' <span class="kh-chip-count">at home</span>' : ''}</button>`;
   };
   const s = haSheet({
     title: 'What do you have?', closeLabel: 'Cancel', grey: true, detent: 'large',
     body: `<p class="ha-text kh-start-intro">Tap the everyday things you have at home. Each goes in with a rough best-before date, which you can change on the item.</p>
-      ${groups.map((g, i) => `<section class="ha-section" aria-labelledby="kh-sg-${i}"><h3 class="ha-section-header" id="kh-sg-${i}">${esc(g)}</h3>
-        <div class="ha-chips ha-chips--wrap kh-start-chips" role="group" aria-labelledby="kh-sg-${i}">${choices.filter(c => c.group === g).map(chip).join('')}</div></section>`).join('')}
-      <p class="ha-section-footer">Not here? Add it afterwards with + or the microphone.</p>`,
-    footer: `<button type="button" class="ha-btn ha-btn--primary ha-btn--block" id="kh-start-go" disabled>Add items</button>`,
+      ${groups.map((g, i) => `<section class="ui-section" aria-labelledby="kh-sg-${i}"><h3 class="ui-section-head" id="kh-sg-${i}">${esc(g)}</h3>
+        <div class="ui-chips kh-start-chips" data-wrap="on" role="group" aria-labelledby="kh-sg-${i}">${choices.filter(c => c.group === g).map(chip).join('')}</div></section>`).join('')}
+      <p class="ui-section-foot">Not here? Add it afterwards with + or the microphone.</p>`,
+    footer: `<button type="button" class="ui-fill ui-wide" id="kh-start-go" disabled>Add items</button>`,
     onClose: afterSheet,
   });
   const go = $('#kh-start-go', s.el);
   const picked = () => [...s.el.querySelectorAll('.kh-start-chips [aria-pressed="true"]')].map(b => choices.find(c => c.key === b.dataset.k));
   s.el.addEventListener('click', e => {
-    const b = e.target.closest('.kh-start-chips .ha-chip');
+    const b = e.target.closest('.kh-start-chips .ui-chip');
     if (!b || b.disabled) return;
     b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
     const n = picked().length;
@@ -435,13 +435,13 @@ function viewItems() {
   const all = items();
   const places = LOCATIONS.filter(l => all.some(i => i.location === l));
   if (S.place && !places.includes(S.place)) S.place = '';
-  const chip = (v, label, n) => `<button type="button" class="ha-chip" aria-pressed="${S.place === v}" data-act="place" data-v="${esc(v)}">${esc(label)} <span class="ha-chip-count">${n}</span></button>`;
+  const chip = (v, label, n) => `<button type="button" class="ui-chip" aria-pressed="${S.place === v}" data-act="place" data-v="${esc(v)}">${esc(label)} <span class="kh-chip-count">${n}</span></button>`;
   const seg = (v, label) => `<label class="ha-seg"><input type="radio" name="kh-sort" value="${v}"${S.sort === v ? ' checked' : ''}><span>${label}</span></label>`;
   return `<h1 class="ha-large-title">Items</h1>
     <div class="ha-search" role="search">${icon('search')}
       <input type="search" id="kh-q" placeholder="Search your items" aria-label="Search your items" autocomplete="off" value="${esc(S.q)}">
       <button type="button" class="ha-search-clear" data-act="q-clear" aria-label="Clear search">${icon('close')}</button></div>
-    <div class="ha-chips" role="group" aria-label="Where it’s kept">${chip('', 'All', all.length)}${places.map(p => chip(p, p, all.filter(i => i.location === p).length)).join('')}</div>
+    <div class="ui-chips" role="group" aria-label="Where it’s kept">${chip('', 'All', all.length)}${places.map(p => chip(p, p, all.filter(i => i.location === p).length)).join('')}</div>
     <fieldset class="ha-segmented"><legend>Sort by</legend>${seg('expiry', 'Use by')}${seg('name', 'Name')}${seg('category', 'Category')}</fieldset>
     <div id="kh-items-list">${itemsList()}</div>`;
 }
@@ -454,13 +454,13 @@ function itemsList() {
   else list.sort((a, b) => a.name.localeCompare(b.name));
   if (!list.length) {
     return all.length
-      ? `<div class="ha-empty"><span class="ha-empty-icon">${icon('search')}</span><p class="ha-empty-title">Nothing found</p><p class="ha-empty-text">No items match. Try another word or place.</p></div>`
-      : `<div class="ha-card ha-empty"><span class="ha-empty-icon">${icon('box')}</span><p class="ha-empty-title">No items yet</p><p class="ha-empty-text">Add what’s at home to start.</p><button type="button" class="ha-btn ha-btn--primary" data-act="go-add">Add an item</button></div>`;
+      ? `<div class="ui-empty"><span class="ui-empty-icon">${icon('search')}</span><p class="ui-empty-title">Nothing found</p><p class="ui-empty-text">No items match. Try another word or place.</p></div>`
+      : `<div class="ui-card ui-empty"><span class="ui-empty-icon">${icon('box')}</span><p class="ui-empty-title">No items yet</p><p class="ui-empty-text">Add what’s at home to start.</p><button type="button" class="ui-fill" data-act="go-add">Add an item</button></div>`;
   }
-  if (S.sort !== 'category') return section(plural(list.length, 'item'), `<ul class="ha-list">${list.map(i => itemRow(i)).join('')}</ul>`, { id: 'items' });
+  if (S.sort !== 'category') return section(plural(list.length, 'item'), `<ul class="ui-list">${list.map(i => itemRow(i)).join('')}</ul>`, { id: 'items' });
   const groups = new Map();
   for (const it of list) { const c = it.category || 'Other'; if (!groups.has(c)) groups.set(c, []); groups.get(c).push(it); }
-  return [...groups].map(([c, l], i) => section(c, `<ul class="ha-list">${l.map(it => itemRow(it)).join('')}</ul>`, { count: l.length, id: 'cat-' + i })).join('');
+  return [...groups].map(([c, l], i) => section(c, `<ul class="ui-list">${l.map(it => itemRow(it)).join('')}</ul>`, { count: l.length, id: 'cat-' + i })).join('');
 }
 function drawItemsList() {
   const el = $('#kh-items-list'); if (el) el.innerHTML = itemsList();
@@ -488,20 +488,20 @@ function viewItem(it) {
     const what = b.openedAt ? `${b.qty} opened` : it.openDays ? `${b.qty} unopened` : plural(b.qty, 'in stock', 'in stock');
     const sub = [b.openedAt ? `Opened ${fmt(b.openedAt)}` : '', d ? `use by ${fmt(d)}` : 'No date'].filter(Boolean).join(' · ');
     const desc = d ? `use by ${fmt(d)}` : 'no date';
-    return `<li><div class="ha-row kh-batch">
-      <span class="ha-row-body"><span class="ha-row-title">${esc(what)}</span><span class="ha-row-sub">${esc(sub.charAt(0).toUpperCase() + sub.slice(1))}</span></span>
-      <span class="ha-row-trail">${badge(d)}</span>
+    return `<li><div class="ui-row kh-batch">
+      <span class="ui-row-main"><span class="kh-row-title">${esc(what)}</span><span class="ui-row-sub">${esc(sub.charAt(0).toUpperCase() + sub.slice(1))}</span></span>
+      <span class="ui-row-trail">${badge(d)}</span>
       <span class="kh-batch-acts">
-        ${!b.openedAt && it.openDays ? `<button type="button" class="ha-btn ha-btn--small" data-act="open" data-b="${esc(b.id)}" aria-label="Open 1, ${esc(desc)}">Open</button>` : ''}
-        <button type="button" class="ha-btn ha-btn--small" data-act="use" data-b="${esc(b.id)}" aria-label="Used 1, ${esc(desc)}">Used 1</button>
-        <button type="button" class="ha-btn ha-btn--small ha-btn--quiet" data-act="toss" data-b="${esc(b.id)}" aria-label="Bin 1, ${esc(desc)}">Bin 1</button>
+        ${!b.openedAt && it.openDays ? `<button type="button" class="ui-tint" data-size="small" data-act="open" data-b="${esc(b.id)}" aria-label="Open 1, ${esc(desc)}">Open</button>` : ''}
+        <button type="button" class="ui-tint" data-size="small" data-act="use" data-b="${esc(b.id)}" aria-label="Used 1, ${esc(desc)}">Used 1</button>
+        <button type="button" class="ui-plain" data-size="small" data-act="toss" data-b="${esc(b.id)}" aria-label="Bin 1, ${esc(desc)}">Bin 1</button>
       </span></div></li>`;
   };
-  h += section('In stock', `<ul class="ha-list">${batches.length ? batches.map(batchRow).join('') : `<li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title">None left</span><span class="ha-row-sub">Bought more? Add it below.</span></span></div></li>`}</ul>`,
+  h += section('In stock', `<ul class="ui-list">${batches.length ? batches.map(batchRow).join('') : `<li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title">None left</span><span class="ui-row-sub">Bought more? Add it below.</span></span></div></li>`}</ul>`,
     { count: q, id: 'stock', footer: it.openDays ? `Keeps about ${plural(it.openDays, 'day')} once opened (the label wins).` : '' });
-  h += `<div class="ha-btn-stack kh-actions">
-    <button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-act="bought">${icon('plus')}Bought more</button>
-    <button type="button" class="ha-btn ha-btn--secondary ha-btn--block" data-act="to-list"${onList(it.id) ? ' aria-disabled="true"' : ''}>${icon('cart')}${onList(it.id) ? 'On the shopping list' : 'Add to shopping list'}</button>
+  h += `<div class="ui-buttons kh-actions">
+    <button type="button" class="ui-fill ui-wide" data-act="bought">${icon('plus')}Bought more</button>
+    <button type="button" class="ui-tint ui-wide" data-act="to-list"${onList(it.id) ? ' aria-disabled="true"' : ''}>${icon('cart')}${onList(it.id) ? 'On the shopping list' : 'Add to shopping list'}</button>
   </div>`;
 
   // how fast the household uses it
@@ -509,29 +509,29 @@ function viewItem(it) {
   const cur = t.slice(0, 7);
   const cols = u.months.map(m => `<li class="ha-col${m.key === cur ? ' is-current' : ''}"><span class="ha-col-value">${m.used + m.wasted}</span><span class="ha-col-bar" style="--v:${Math.round(((m.used + m.wasted) / max) * 100)}%"></span><span>${esc(m.label)}${m.key === cur ? '<span class="ha-sr"> (this month)</span>' : ''}</span></li>`).join('');
   const pace = u.daysPerUnit
-    ? `<p class="ha-card-kicker">Usual pace</p><p class="ha-card-title">${esc(L.paceLabel(u).replace(/^./, c => c.toUpperCase()))}</p>${ro ? `<p class="ha-card-text">At this pace it runs out around <strong>${esc(fmt(ro))}</strong>.</p>` : ''}`
-    : `<p class="ha-card-text">Tap “Used 1” each time one is finished. After two, Kaki Home learns how fast you use it and puts it on the shopping list before it runs out.</p>`;
-  h += section('How fast we use it', `<div class="ha-card">${pace}
+    ? `<p class="kh-card-kicker">Usual pace</p><p class="ui-card-title">${esc(L.paceLabel(u).replace(/^./, c => c.toUpperCase()))}</p>${ro ? `<p class="ui-card-text">At this pace it runs out around <strong>${esc(fmt(ro))}</strong>.</p>` : ''}`
+    : `<p class="ui-card-text">Tap “Used 1” each time one is finished. After two, Kaki Home learns how fast you use it and puts it on the shopping list before it runs out.</p>`;
+  h += section('How fast we use it', `<div class="ui-card">${pace}
       <p class="kh-cols-label" id="kh-cols-l">Used up or thrown away each month</p>
       <ul class="ha-cols kh-cols" aria-labelledby="kh-cols-l">${cols}</ul></div>`,
     { id: 'pace', footer: [plural(u.units, 'used up', 'used up'), u.discards ? `${u.discards} thrown away` : '', it.lowAt ? `on the shopping list at ${it.lowAt} left` : ''].filter(Boolean).join(' · ') });
 
   // buy it online
   const sq = shopQuery(it);
-  h += section('Buy online', `<ul class="ha-list">
-    <li><a class="ha-row" href="${esc(L.fairpriceUrl(sq))}" target="_blank" rel="noopener"><span class="ha-row-icon ha-row-icon--grey">${icon('cart')}</span><span class="ha-row-body"><span class="ha-row-title">Search FairPrice</span></span>${icon('external', { cls: 'ha-row-chevron' })}<span class="ha-sr"> (opens FairPrice)</span></a></li>
-    <li><a class="ha-row" href="${esc(L.shengSiongUrl(sq))}" target="_blank" rel="noopener"><span class="ha-row-icon ha-row-icon--grey">${icon('cart')}</span><span class="ha-row-body"><span class="ha-row-title">Search Sheng Siong</span></span>${icon('external', { cls: 'ha-row-chevron' })}<span class="ha-sr"> (opens Sheng Siong)</span></a></li>
+  h += section('Buy online', `<ul class="ui-list">
+    <li><a class="ui-row" href="${esc(L.fairpriceUrl(sq))}" target="_blank" rel="noopener"><span class="ui-row-lead" data-tone="grey">${icon('cart')}</span><span class="ui-row-main"><span class="kh-row-title">Search FairPrice</span></span>${icon('external', { cls: 'ui-row-chevron' })}<span class="ha-sr"> (opens FairPrice)</span></a></li>
+    <li><a class="ui-row" href="${esc(L.shengSiongUrl(sq))}" target="_blank" rel="noopener"><span class="ui-row-lead" data-tone="grey">${icon('cart')}</span><span class="ui-row-main"><span class="kh-row-title">Search Sheng Siong</span></span>${icon('external', { cls: 'ui-row-chevron' })}<span class="ha-sr"> (opens Sheng Siong)</span></a></li>
   </ul>`, { id: 'online' });
 
   // details
-  const detail = (label, value) => value === '' || value == null ? '' : `<li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title">${label}</span></span><span class="ha-row-value kh-wrap">${esc(value)}</span></div></li>`;
-  h += section('Details', `<ul class="ha-list">${detail('Category', it.category)}${detail('Kept in', it.location)}${detail('Keeps once opened', it.openDays ? plural(it.openDays, 'day') : 'Not set')}${detail('Shopping list at', it.lowAt ? `${it.lowAt} left` : 'None left')}${detail('Barcode', it.barcode)}${detail('Added by', it.createdBy || '')}${detail('Last changed by', it.updatedBy || '')}</ul>`, { id: 'details' });
+  const detail = (label, value) => value === '' || value == null ? '' : `<li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title">${label}</span></span><span class="ui-row-value kh-wrap">${esc(value)}</span></div></li>`;
+  h += section('Details', `<ul class="ui-list">${detail('Category', it.category)}${detail('Kept in', it.location)}${detail('Keeps once opened', it.openDays ? plural(it.openDays, 'day') : 'Not set')}${detail('Shopping list at', it.lowAt ? `${it.lowAt} left` : 'None left')}${detail('Barcode', it.barcode)}${detail('Added by', it.createdBy || '')}${detail('Last changed by', it.updatedBy || '')}</ul>`, { id: 'details' });
 
   // history
   h += section('History', evs.length
-    ? `<ul class="ha-list">${evs.slice(0, 15).map(e => `<li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title">${VERB[e.type] || esc(e.type)} ${e.qty > 1 ? e.qty : ''}</span><span class="ha-row-sub">${esc(fmtTime(e.at))}${e.by ? ' · ' + esc(e.by) : ''}</span></span></div></li>`).join('')}</ul>`
-    : `<ul class="ha-list"><li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-sub">Nothing yet.</span></span></div></li></ul>`, { id: 'history', footer: evs.length > 15 ? `The latest 15 of ${evs.length}.` : '' });
-  h += `<ul class="ha-list kh-delete"><li><button type="button" class="ha-row ha-row--danger ha-row--center" data-act="delete"><span class="ha-row-body"><span class="ha-row-title">Delete item</span></span></button></li></ul>`;
+    ? `<ul class="ui-list">${evs.slice(0, 15).map(e => `<li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title">${VERB[e.type] || esc(e.type)} ${e.qty > 1 ? e.qty : ''}</span><span class="ui-row-sub">${esc(fmtTime(e.at))}${e.by ? ' · ' + esc(e.by) : ''}</span></span></div></li>`).join('')}</ul>`
+    : `<ul class="ui-list"><li><div class="ui-row"><span class="ui-row-main"><span class="ui-row-sub">Nothing yet.</span></span></div></li></ul>`, { id: 'history', footer: evs.length > 15 ? `The latest 15 of ${evs.length}.` : '' });
+  h += `<ul class="ui-list kh-delete"><li><button type="button" class="ui-row" data-tone="danger" data-align="center" data-act="delete"><span class="ui-row-main"><span class="kh-row-title">Delete item</span></span></button></li></ul>`;
   return h;
 }
 
@@ -555,17 +555,17 @@ function viewForm(id) {
   const field = (name, label, attrs = '', hint = '') => `<label class="ha-field"><span class="ha-field-label">${label}</span><input class="ha-input" name="${name}" value="${esc(d[name])}" ${attrs}>${hint ? `<span class="ha-field-hint">${hint}</span>` : ''}</label>`;
   let h = `<h1 class="ha-large-title">${editing ? 'Edit item' : 'Add an item'}</h1>`;
   if (!editing) {
-    h += `<section class="ha-section kh-finder" aria-label="Find a product">
+    h += `<section class="ui-section kh-finder" aria-label="Find a product">
       <div class="ha-search" role="search">${icon('search')}
         <input type="search" id="kh-find" placeholder="Soy sauce, Milo, Dynamo…" aria-label="Find a product" autocomplete="off" enterkeyhint="search">
         <button type="button" class="ha-search-clear" data-act="find-clear" aria-label="Clear">${icon('close')}</button></div>
-      <ul class="ha-list" id="kh-sugg" hidden></ul>
-      <div class="ha-btn-row"><button type="button" class="ha-btn ha-btn--secondary" data-act="scan">${icon('barcode')}Scan barcode</button><button type="button" class="ha-btn ha-btn--secondary" data-act="quick">${icon('mic')}Say or type a list</button></div>
-      <p class="ha-section-footer" id="kh-find-foot">Pick a common Singapore supermarket product, scan its barcode, or say what you bought, to fill in the details.</p>
+      <ul class="ui-list" id="kh-sugg" hidden></ul>
+      <div class="kh-btn-row"><button type="button" class="ui-tint" data-act="scan">${icon('barcode')}Scan barcode</button><button type="button" class="ui-tint" data-act="quick">${icon('mic')}Say or type a list</button></div>
+      <p class="ui-section-foot" id="kh-find-foot">Pick a common Singapore supermarket product, scan its barcode, or say what you bought, to fill in the details.</p>
     </section>`;
   }
   h += `<form id="kh-form" novalidate>
-    <section class="ha-section" aria-labelledby="h-f-details"><h2 class="ha-section-header" id="h-f-details">Details</h2>
+    <section class="ui-section" aria-labelledby="h-f-details"><h2 class="ui-section-head" id="h-f-details">Details</h2>
       <div class="kh-photo-row">
         <label class="kh-photo">${d.pic ? `<img src="${esc(d.pic)}" alt="">` : icon('camera')}<span>${d.pic ? 'Change photo' : 'Add photo'}</span>
           <input type="file" accept="image/*" capture="environment" class="kh-file" id="kh-photo-file"></label>
@@ -574,7 +574,7 @@ function viewForm(id) {
           <p class="ha-field-error" id="kh-name-err" hidden>${icon('alert')}Give it a name</p>
         </div>
       </div>
-      ${d.pic ? `<p class="kh-photo-del"><button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-act="photo-del">Remove photo</button></p>` : ''}
+      ${d.pic ? `<p class="kh-photo-del"><button type="button" class="ui-plain" data-size="small" data-act="photo-del">Remove photo</button></p>` : ''}
       <div class="kh-two">${field('brand', 'Brand', 'autocomplete="off" placeholder="Kikkoman"')}${field('size', 'Size', 'autocomplete="off" placeholder="500 ml"')}</div>
       <div class="kh-two">
         <label class="ha-field"><span class="ha-field-label">Category</span><select class="ha-select" name="category">${opt(CATEGORIES, d.category)}</select></label>
@@ -582,18 +582,18 @@ function viewForm(id) {
       </div>
     </section>`;
   if (!editing) {
-    h += `<section class="ha-section" aria-labelledby="h-f-stock"><h2 class="ha-section-header" id="h-f-stock">Stock</h2>
-      <ul class="ha-list"><li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title" id="kh-qty-l">How many</span></span>
+    h += `<section class="ui-section" aria-labelledby="h-f-stock"><h2 class="ui-section-head" id="h-f-stock">Stock</h2>
+      <ul class="ui-list"><li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title" id="kh-qty-l">How many</span></span>
         <div class="ha-stepper" role="group" aria-labelledby="kh-qty-l" id="kh-qty"><button type="button" data-step="-1" aria-label="Fewer">${icon('minus')}</button><output>${Number(d.qty) || 0}</output><button type="button" data-step="1" aria-label="More">${icon('plus')}</button></div></div></li></ul>
       <label class="ha-field kh-gap"><span class="ha-field-label">Best before or use by</span><input class="ha-input" type="date" name="expiry" value="${esc(d.expiry)}"></label>
       ${dateChips('expiry', d.expiry)}
     </section>`;
   }
-  h += `<section class="ha-section" aria-labelledby="h-f-remind"><h2 class="ha-section-header" id="h-f-remind">Reminders</h2>
+  h += `<section class="ui-section" aria-labelledby="h-f-remind"><h2 class="ui-section-head" id="h-f-remind">Reminders</h2>
       <div class="kh-two">${field('openDays', 'Keeps once opened (days)', 'type="number" inputmode="numeric" min="0" placeholder="Not set"')}${field('lowAt', 'On the list when down to', 'type="number" inputmode="numeric" min="0"')}</div>
-      <p class="ha-section-footer">Opened items are due the earlier of the printed date and this many days after opening.</p>
+      <p class="ui-section-foot">Opened items are due the earlier of the printed date and this many days after opening.</p>
     </section>
-    <section class="ha-section" aria-labelledby="h-f-code"><h2 class="ha-section-header" id="h-f-code">Barcode</h2>
+    <section class="ui-section" aria-labelledby="h-f-code"><h2 class="ui-section-head" id="h-f-code">Barcode</h2>
       ${field('barcode', 'Barcode number', 'inputmode="numeric" autocomplete="off" placeholder="Optional"', 'Scanning it next time finds this item.')}
     </section>
   </form>`;
@@ -607,7 +607,7 @@ function wireForm() {
     const t = e.target; if (!t.name || !S.draft) return;
     S.draft[t.name] = t.value; S.dirty = true;
     if (t.name === 'name' && t.value.trim()) { t.removeAttribute('aria-invalid'); $('#kh-name-err').hidden = true; }
-    if (t.name === 'expiry') for (const c of document.querySelectorAll('.kh-dates .ha-chip')) c.setAttribute('aria-pressed', String(c.dataset.v === t.value && !!t.value));
+    if (t.name === 'expiry') for (const c of document.querySelectorAll('.kh-dates .ui-chip')) c.setAttribute('aria-pressed', String(c.dataset.v === t.value && !!t.value));
   });
   f.addEventListener('submit', submitForm);
 }
@@ -630,11 +630,11 @@ function showSugg() {
   const q = $('#kh-find')?.value || '', ul = $('#kh-sugg');
   if (!ul) return;
   const list = suggestions(q);
-  const row = (act, data, thumbHtml, title, sub, trail = '') => `<li><button type="button" class="ha-row" data-act="${act}" ${data}>${thumbHtml}<span class="ha-row-body"><span class="ha-row-title">${title}</span>${sub ? `<span class="ha-row-sub">${sub}</span>` : ''}</span>${trail}</button></li>`;
+  const row = (act, data, thumbHtml, title, sub, trail = '') => `<li><button type="button" class="ui-row" data-act="${act}" ${data}>${thumbHtml}<span class="ui-row-main"><span class="kh-row-title">${title}</span>${sub ? `<span class="ui-row-sub">${sub}</span>` : ''}</span>${trail}</button></li>`;
   ul.innerHTML = list.map(x => x.mine
-    ? row('sugg-mine', `data-id="${esc(x.mine.id)}"`, thumb(x.mine), esc(x.mine.name), subOf(x.mine), `<span class="ha-row-trail"><span class="ha-badge ha-badge--accent">At home</span></span>`)
-    : row('sugg', `data-i="${x.i}"`, `<span class="ha-row-thumb">${icon(CAT_ICON[x.cat.category] || 'box')}</span>`, esc(x.cat.name), [x.cat.brand, x.cat.size].filter(Boolean).map(esc).join(' · '))).join('')
-    + (q.trim() ? `<li><button type="button" class="ha-row ha-row--action" data-act="sugg-own"><span class="ha-row-icon">${icon('plus')}</span><span class="ha-row-body"><span class="ha-row-title">Add “${esc(q.trim())}”</span><span class="ha-row-sub">Not in the list? Type the details below.</span></span></button></li>` : '');
+    ? row('sugg-mine', `data-id="${esc(x.mine.id)}"`, thumb(x.mine), esc(x.mine.name), subOf(x.mine), `<span class="ui-row-trail"><span class="ui-badge" data-tone="accent">At home</span></span>`)
+    : row('sugg', `data-i="${x.i}"`, `<span class="ui-row-thumb">${icon(CAT_ICON[x.cat.category] || 'box')}</span>`, esc(x.cat.name), [x.cat.brand, x.cat.size].filter(Boolean).map(esc).join(' · '))).join('')
+    + (q.trim() ? `<li><button type="button" class="ui-row" data-tone="action" data-act="sugg-own"><span class="ui-row-lead">${icon('plus')}</span><span class="ui-row-main"><span class="kh-row-title">Add “${esc(q.trim())}”</span><span class="ui-row-sub">Not in the list? Type the details below.</span></span></button></li>` : '');
   ul.hidden = !q.trim();
   $('#kh-find-foot').hidden = !!q.trim();
 }
@@ -688,7 +688,7 @@ async function openScan() {
     title: 'Scan a barcode', closeLabel: 'Cancel',
     body: `<div class="kh-scan"><video muted playsinline aria-label="Camera view"></video></div>
       <p class="ha-text kh-scan-msg" id="kh-scan-msg" role="status">Point the camera at the barcode.</p>
-      <label class="ha-btn ha-btn--secondary ha-btn--block kh-file-btn">${icon('camera')}Use a photo instead<input type="file" accept="image/*" class="kh-file" id="kh-scan-file"></label>`,
+      <label class="ui-tint ui-wide kh-file-btn">${icon('camera')}Use a photo instead<input type="file" accept="image/*" class="kh-file" id="kh-scan-file"></label>`,
     onClose: () => { scanning?.cancel(); scanning = null; afterSheet(); },
   });
   const msg = $('#kh-scan-msg', s.el);
@@ -747,18 +747,18 @@ function openBought(it, { shopId = null } = {}) {
   const s = haSheet({
     title: 'Bought more', closeLabel: 'Cancel', grey: true,
     body: `<form id="kh-bought" novalidate>
-      <ul class="ha-list"><li><div class="ha-row">${thumb(it)}<span class="ha-row-body"><span class="ha-row-title">${esc(it.name)}</span>${subOf(it) ? `<span class="ha-row-sub">${subOf(it)}</span>` : ''}</span></div></li>
-        <li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-title" id="kh-b-qty-l">How many</span></span>
+      <ul class="ui-list"><li><div class="ui-row">${thumb(it)}<span class="ui-row-main"><span class="kh-row-title">${esc(it.name)}</span>${subOf(it) ? `<span class="ui-row-sub">${subOf(it)}</span>` : ''}</span></div></li>
+        <li><div class="ui-row"><span class="ui-row-main"><span class="kh-row-title" id="kh-b-qty-l">How many</span></span>
           <div class="ha-stepper" role="group" aria-labelledby="kh-b-qty-l" id="kh-b-qty"><button type="button" data-step="-1" aria-label="Fewer">${icon('minus')}</button><output>1</output><button type="button" data-step="1" aria-label="More">${icon('plus')}</button></div></div></li></ul>
       <label class="ha-field kh-gap"><span class="ha-field-label">Best before or use by</span><input class="ha-input" type="date" name="expiry"></label>
       ${dateChips('expiry', '')}
     </form>`,
-    footer: `<button type="submit" form="kh-bought" class="ha-btn ha-btn--primary ha-btn--block">Add to stock</button>`,
+    footer: `<button type="submit" form="kh-bought" class="ui-fill ui-wide">Add to stock</button>`,
     onClose: afterSheet,
   });
   const qty = haStepper($('#kh-b-qty', s.el), { min: 1, max: 99 });
   const f = $('#kh-bought', s.el);
-  f.addEventListener('input', e => { if (e.target.name === 'expiry') for (const c of s.el.querySelectorAll('.kh-dates .ha-chip')) c.setAttribute('aria-pressed', 'false'); });
+  f.addEventListener('input', e => { if (e.target.name === 'expiry') for (const c of s.el.querySelectorAll('.kh-dates .ui-chip')) c.setAttribute('aria-pressed', 'false'); });
   f.addEventListener('submit', async e => {
     e.preventDefault();
     const n = qty.get(), cur = S.items.get(it.id);
@@ -780,11 +780,11 @@ async function openQuick() {
     body: `<form id="kh-quick" novalidate>
       <label class="ha-field"><span class="ha-field-label">What did you buy?</span>
         <textarea class="ha-input kh-quick-text" id="kh-quick-text" autocomplete="off" placeholder="2 Meiji milk in the fridge expires 25 Oct, eggs and 3 tins of sardines"></textarea></label>
-      ${Q.canListen() ? `<div class="ha-btn-row"><button type="button" class="ha-btn ha-btn--secondary kh-mic" id="kh-mic" aria-pressed="false">${icon('mic')}<span>Speak</span></button></div>` : ''}
-      <p class="ha-section-footer" id="kh-quick-hint">${Q.canListen() ? 'Tap Speak, or type.' : 'Type, or tap the microphone on your keyboard.'} Say how many, where it’s kept and the date; separate things with “and” or commas.</p>
-      <ul class="ha-list" id="kh-quick-list" aria-live="polite"></ul>
+      ${Q.canListen() ? `<div class="kh-btn-row"><button type="button" class="ui-tint kh-mic" id="kh-mic" aria-pressed="false">${icon('mic')}<span>Speak</span></button></div>` : ''}
+      <p class="ui-section-foot" id="kh-quick-hint">${Q.canListen() ? 'Tap Speak, or type.' : 'Type, or tap the microphone on your keyboard.'} Say how many, where it’s kept and the date; separate things with “and” or commas.</p>
+      <ul class="ui-list" id="kh-quick-list" aria-live="polite"></ul>
     </form>`,
-    footer: `<button type="submit" form="kh-quick" class="ha-btn ha-btn--primary ha-btn--block" id="kh-quick-go" disabled>Add items</button>`,
+    footer: `<button type="submit" form="kh-quick" class="ui-fill ui-wide" id="kh-quick-go" disabled>Add items</button>`,
     onClose: () => { mic?.stop(); afterSheet(); },
   });
   const ta = $('#kh-quick-text', s.el), ul = $('#kh-quick-list', s.el), go = $('#kh-quick-go', s.el);
@@ -792,8 +792,8 @@ async function openQuick() {
     x.match?.mine ? 'adds to the one at home' : x.match?.cat ? '' : 'new item'].filter(Boolean).join(' · ');
   const show = () => {
     found = Q.parseQuick(ta.value, { today: today(), items: items(), catalogue: CATALOGUE });
-    ul.innerHTML = found.map((x, i) => `<li><label class="ha-row"><input type="checkbox" data-q="${i}" checked>
-      <span class="ha-row-body"><span class="ha-row-title">${esc(x.name)}</span><span class="ha-row-sub">${esc(describe(x))}</span></span></label></li>`).join('');
+    ul.innerHTML = found.map((x, i) => `<li><label class="ui-row"><input type="checkbox" data-q="${i}" checked>
+      <span class="ui-row-main"><span class="kh-row-title">${esc(x.name)}</span><span class="ui-row-sub">${esc(describe(x))}</span></span></label></li>`).join('');
     count();
   };
   const count = () => {
@@ -893,19 +893,19 @@ function viewShop() {
   let h = `<h1 class="ha-large-title">Shopping</h1>
     <form class="kh-addline" id="kh-shop-add"><label class="ha-sr" for="kh-shop-text">Add something to buy</label>
       <input class="ha-input" id="kh-shop-text" placeholder="Add something to buy" autocomplete="off" enterkeyhint="done">
-      <button class="ha-btn ha-btn--compact" type="submit">Add</button></form>`;
-  const line = m => `<li><label class="ha-row${m.done ? ' is-done' : ''}">
+      <button class="ui-tint" data-size="small" type="submit">Add</button></form>`;
+  const line = m => `<li><label class="ui-row${m.done ? ' is-done' : ''}">
       <input type="checkbox" data-shop="${esc(m.id)}"${m.done ? ' checked' : ''}>
-      <span class="ha-row-body"><span class="ha-row-title">${esc(m.name)}</span>${m.by ? `<span class="ha-row-sub">Added by ${esc(m.by)}</span>` : ''}</span>
-      <button type="button" class="ha-btn ha-btn--quiet ha-btn--icon" data-act="shop-del" data-id="${esc(m.id)}" aria-label="Remove ${esc(m.name)}">${icon('trash')}</button></label></li>`;
-  h += section('To buy', manual.length ? `<ul class="ha-list" id="kh-shop">${manual.map(line).join('')}</ul>`
-    : `<ul class="ha-list" id="kh-shop"><li><div class="ha-row"><span class="ha-row-body"><span class="ha-row-sub">Nothing on the list yet.</span></span></div></li></ul>`,
+      <span class="ui-row-main"><span class="kh-row-title">${esc(m.name)}</span>${m.by ? `<span class="ui-row-sub">Added by ${esc(m.by)}</span>` : ''}</span>
+      <button type="button" class="ui-plain kh-icon-btn" data-act="shop-del" data-id="${esc(m.id)}" aria-label="Remove ${esc(m.name)}">${icon('trash')}</button></label></li>`;
+  h += section('To buy', manual.length ? `<ul class="ui-list" id="kh-shop">${manual.map(line).join('')}</ul>`
+    : `<ul class="ui-list" id="kh-shop"><li><div class="ui-row"><span class="ui-row-main"><span class="ui-row-sub">Nothing on the list yet.</span></span></div></li></ul>`,
   { id: 'shop', action: done ? `<button type="button" data-act="shop-clear">Clear ticked</button>` : (left ? `<span class="ha-num">${left}</span>` : ''),
     footer: manual.length || suggested.length ? 'Tick things off as you buy them. An item from your stock asks how many you bought and the date.'
       : 'Your items come here by themselves when none are left, when they’re down to their “on the list when down to” number, or when they’ll run out within a week at your usual pace. Type anything else above.' });
   h += section('Suggested from your stock', suggested.length
-    ? `<ul class="ha-list">${suggested.map(b => `<li><div class="ha-row">${thumb(b.item)}<span class="ha-row-body"><span class="ha-row-title">${esc(b.item.name)}</span><span class="ha-row-sub">${esc(L.whyText(b, today()))}</span></span>
-        <span class="ha-row-trail"><button type="button" class="ha-btn ha-btn--small" data-act="to-list" data-id="${esc(b.item.id)}" aria-label="Add ${esc(b.item.name)} to the list">Add</button></span></div></li>`).join('')}</ul>`
+    ? `<ul class="ui-list">${suggested.map(b => `<li><div class="ui-row">${thumb(b.item)}<span class="ui-row-main"><span class="kh-row-title">${esc(b.item.name)}</span><span class="ui-row-sub">${esc(L.whyText(b, today()))}</span></span>
+        <span class="ui-row-trail"><button type="button" class="ui-tint" data-size="small" data-act="to-list" data-id="${esc(b.item.id)}" aria-label="Add ${esc(b.item.name)} to the list">Add</button></span></div></li>`).join('')}</ul>`
     : '', { id: 'suggested', footer: suggested.length ? 'Out of stock, running low, or due to run out within a week at your usual pace.' : 'Nothing is running low.' });
   return h;
 }
@@ -924,71 +924,71 @@ function addToList(it) {
 
 function viewSettings() {
   const configured = !!S.cloud?.configured;
-  const row = (inner, cls = '') => `<li><div class="ha-row${cls}">${inner}</div></li>`;
-  const btnRow = (act, title, { cls = ' ha-row--action', iconName = '', sub = '' } = {}) => `<li><button type="button" class="ha-row${cls}" data-act="${act}">${iconName ? `<span class="ha-row-icon">${icon(iconName)}</span>` : ''}<span class="ha-row-body"><span class="ha-row-title">${title}</span>${sub ? `<span class="ha-row-sub">${sub}</span>` : ''}</span></button></li>`;
+  const row = (inner, cls = '') => `<li><div class="ui-row"${cls}>${inner}</div></li>`;
+  const btnRow = (act, title, { cls = ' data-tone="action"', iconName = '', sub = '' } = {}) => `<li><button type="button" class="ui-row"${cls} data-act="${act}">${iconName ? `<span class="ui-row-lead">${icon(iconName)}</span>` : ''}<span class="ui-row-main"><span class="kh-row-title">${title}</span>${sub ? `<span class="ui-row-sub">${sub}</span>` : ''}</span></button></li>`;
   let fam, famFoot = '';
   if (S.mode === 'demo') {
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon ha-row-icon--grey">${icon('info')}</span><span class="ha-row-body"><span class="ha-row-title">Not in the demo</span><span class="ha-row-sub">The demo uses made-up items and saves nothing.</span></span>`)}</ul>`;
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead" data-tone="grey">${icon('info')}</span><span class="ui-row-main"><span class="kh-row-title">Not in the demo</span><span class="ui-row-sub">The demo uses made-up items and saves nothing.</span></span>`)}</ul>`;
   } else if (!configured) {
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon ha-row-icon--grey">${icon('box')}</span><span class="ha-row-body"><span class="ha-row-title">On this phone only</span><span class="ha-row-sub">Household sharing isn’t set up yet.</span></span>`)}</ul>`;
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead" data-tone="grey">${icon('box')}</span><span class="ui-row-main"><span class="kh-row-title">On this phone only</span><span class="ui-row-sub">Household sharing isn’t set up yet.</span></span>`)}</ul>`;
     famFoot = 'Sharing with the household needs a one-time setup of Kaki Home’s Firebase project (SETUP.md).';
   } else if (S.pending) {
     // a new password account, not verified yet: no household data until the emailed link has been tapped
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon">${icon('mail')}</span><span class="ha-row-body"><span class="ha-row-title">Check your email</span><span class="ha-row-sub kh-break">We sent a link to ${esc(S.pending.email)}. Tap it, then come back here.</span></span>`)}
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead">${icon('mail')}</span><span class="ui-row-main"><span class="kh-row-title">Check your email</span><span class="ui-row-sub kh-break">We sent a link to ${esc(S.pending.email)}. Tap it, then come back here.</span></span>`)}
       ${btnRow('verified', 'I’ve verified', { iconName: 'check' })}${btnRow('verify-resend', 'Send it again')}${btnRow('signout', 'Use a different email')}</ul>`;
     famFoot = 'The link proves the email is yours. Look in Junk or Spam if it doesn’t arrive in a minute or two.';
   } else if (!S.user) {
-    fam = `<ul class="ha-list">${btnRow('signin', 'Continue with Google', { iconName: 'user' })}</ul>
-      <p class="kh-quiet"><button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-act="email-open">Use email instead</button></p>`;
+    fam = `<ul class="ui-list">${btnRow('signin', 'Continue with Google', { iconName: 'user' })}</ul>
+      <p class="kh-quiet"><button type="button" class="ui-plain" data-size="small" data-act="email-open">Use email instead</button></p>`;
     famFoot = 'Sign in to share one list with your household: everyone sees the same items and shopping list. Only the people added can see it.';
   } else if (!S.household && S.lookupFailed) {
     // couldn't ask the server (no signal): not "no household", so no Start button
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon">${icon('alert')}</span><span class="ha-row-body"><span class="ha-row-title">Can’t check right now</span><span class="ha-row-sub kh-break">${esc(S.user.email)}</span></span>`)}
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead">${icon('alert')}</span><span class="ui-row-main"><span class="kh-row-title">Can’t check right now</span><span class="ui-row-sub kh-break">${esc(S.user.email)}</span></span>`)}
       ${btnRow('hh-check', 'Try again', { iconName: 'refresh' })}${btnRow('signout', 'Sign out')}</ul>`;
     famFoot = 'Connect to the internet and try again. Your household is looked up first, so a second one is never started by mistake.';
   } else if (!S.household) {
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon">${icon('user')}</span><span class="ha-row-body"><span class="ha-row-title">Signed in</span><span class="ha-row-sub">${esc(S.user.email)}</span></span>`)}
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead">${icon('user')}</span><span class="ui-row-main"><span class="kh-row-title">Signed in</span><span class="ui-row-sub">${esc(S.user.email)}</span></span>`)}
       ${btnRow('hh-create', 'Start our household')}${btnRow('hh-check', 'Check again')}${btnRow('signout', 'Sign out')}</ul>`;
     famFoot = `Not in a household yet. Start one, or ask whoever started yours to add ${esc(S.user.email)}, then tap Check again.`;
   } else {
     const h = S.household;
-    fam = `<ul class="ha-list">${row(`<span class="ha-row-icon">${icon('cloud')}</span><span class="ha-row-body"><span class="ha-row-title">${esc(h.name)}</span><span class="ha-row-sub">Signed in as ${esc(S.user.email)}</span></span>`)}
+    fam = `<ul class="ui-list">${row(`<span class="ui-row-lead">${icon('cloud')}</span><span class="ui-row-main"><span class="kh-row-title">${esc(h.name)}</span><span class="ui-row-sub">Signed in as ${esc(S.user.email)}</span></span>`)}
       ${h.members.map(m => {
         const n = names()[m];
         const sub = [n ? m : '', m === h.owner ? 'Started it' : '', m === S.user.email ? 'You' : ''].filter(Boolean).join(' · ');
-        return `<li><button type="button" class="ha-row kh-person" data-act="person" data-v="${esc(m)}"><span class="ha-row-icon ha-row-icon--grey">${icon('user')}</span>
-          <span class="ha-row-body"><span class="ha-row-title kh-break">${esc(n || m)}</span>${sub ? `<span class="ha-row-sub kh-break">${esc(sub)}</span>` : ''}</span>${chevron()}</button></li>`;
+        return `<li><button type="button" class="ui-row kh-person" data-act="person" data-v="${esc(m)}"><span class="ui-row-lead" data-tone="grey">${icon('user')}</span>
+          <span class="ui-row-main"><span class="kh-row-title kh-break">${esc(n || m)}</span>${sub ? `<span class="ui-row-sub kh-break">${esc(sub)}</span>` : ''}</span>${chevron()}</button></li>`;
       }).join('')}
       ${S.localCount ? btnRow('copy-up', `Copy ${plural(S.localCount, 'item')} from this phone`, { iconName: 'upload', sub: 'Saved here before you signed in' }) : ''}
       ${btnRow('signout', 'Sign out')}</ul>
       <form class="kh-addline kh-member" id="kh-member-add"><label class="ha-sr" for="kh-member-email">Household member’s email</label>
         <input class="ha-input" id="kh-member-email" type="email" placeholder="Household member’s email" autocomplete="off" autocapitalize="off" spellcheck="false">
-        <button class="ha-btn ha-btn--compact" type="submit">Add</button></form>`;
+        <button class="ui-tint" data-size="small" type="submit">Add</button></form>`;
     famFoot = 'They sign in with that email (Google, or an emailed link or password) to see Kaki Home. Tap someone to give them a name, email them the link again, or stop sharing. Whoever started it can’t be removed.';
   }
   return `<h1 class="ha-large-title">Settings</h1>
     ${mergeCard()}
     ${section('Household sharing', fam, { id: 'family', footer: famFoot })}
-    ${section('Reminders', `<div class="ha-chips ha-chips--wrap" role="group" aria-label="Expiring soon means within">${Object.entries(SOON).map(([v, l]) =>
-      `<button type="button" class="ha-chip" aria-pressed="${soonDays() === Number(v)}" data-act="soon" data-v="${v}">${l}</button>`).join('')}</div>`,
+    ${section('Reminders', `<div class="ui-chips" data-wrap="on" role="group" aria-label="Expiring soon means within">${Object.entries(SOON).map(([v, l]) =>
+      `<button type="button" class="ui-chip" aria-pressed="${soonDays() === Number(v)}" data-act="soon" data-v="${v}">${l}</button>`).join('')}</div>`,
       { id: 'remind', footer: 'How far ahead “Expiring soon” looks, on Home. Each item’s own “on the list when down to” sets when it counts as low in stock. Kept on this phone.' })}
-    ${section('Help', `<ul class="ha-list">
-      <li><a class="ha-row" href="#/guide"><span class="ha-row-icon">${icon('info')}</span><span class="ha-row-body"><span class="ha-row-title">How to use Kaki Home</span></span>${chevron()}</a></li>
+    ${section('Help', `<ul class="ui-list">
+      <li><a class="ui-row" href="#/guide"><span class="ui-row-lead">${icon('info')}</span><span class="ui-row-main"><span class="kh-row-title">How to use Kaki Home</span></span>${chevron()}</a></li>
       ${btnRow('welcome', 'Show the welcome again', { iconName: 'home' })}
       ${tourOn() ? '' : btnRow('tour-on', 'Show the getting-started list', { iconName: 'list' })}
     </ul>`, { id: 'help' })}
-    ${section('You', `<ul class="ha-list"><li><label class="ha-row"><span class="ha-row-body"><span class="ha-row-title">Your name</span></span>
-      <input class="ha-input ha-input--inline" id="kh-name" value="${esc(prefs.get('name') || '')}" placeholder="${esc(S.user?.name?.split(' ')[0] || 'For example, Mum')}" autocomplete="off"></label></li></ul>`,
+    ${section('You', `<ul class="ui-list"><li><label class="ui-row"><span class="ui-row-main"><span class="kh-row-title">Your name</span></span>
+      <input class="ui-row-input" id="kh-name" value="${esc(prefs.get('name') || '')}" placeholder="${esc(S.user?.name?.split(' ')[0] || 'For example, Mum')}" autocomplete="off"></label></li></ul>`,
       { id: 'you', footer: 'Shows in each item’s history and on the shopping list. Kept on this phone.' })}
-    ${section('Your data', `<ul class="ha-list">
+    ${section('Your data', `<ul class="ui-list">
       ${btnRow('csv', 'Export as CSV', { iconName: 'download', sub: 'A spreadsheet of what’s in stock' })}
       ${btnRow('backup', 'Back up', { iconName: 'download', sub: 'Everything, as a JSON file' })}
-      <li><label class="ha-row ha-row--action"><span class="ha-row-icon">${icon('upload')}</span><span class="ha-row-body"><span class="ha-row-title">Restore a backup</span><span class="ha-row-sub">Adds the items in a backup file</span></span><input type="file" accept="application/json,.json" class="kh-file" id="kh-restore"></label></li>
+      <li><label class="ui-row" data-tone="action"><span class="ui-row-lead">${icon('upload')}</span><span class="ui-row-main"><span class="kh-row-title">Restore a backup</span><span class="ui-row-sub">Adds the items in a backup file</span></span><input type="file" accept="application/json,.json" class="kh-file" id="kh-restore"></label></li>
       ${btnRow('sample', 'Add sample items', { iconName: 'box', sub: 'Made-up items to try the app with' })}
-      ${S.mode === 'local' ? btnRow('wipe', 'Delete everything on this phone', { cls: ' ha-row--danger' }) : ''}
+      ${S.mode === 'local' ? btnRow('wipe', 'Delete everything on this phone', { cls: ' data-tone="danger"' }) : ''}
     </ul>`, { id: 'data' })}
     ${section('This device', '<div id="kh-theme"></div>', { id: 'device', footer: 'Look, light or dark, and row size are kept on this phone only.' })}
-    ${section('On your home screen', `<div class="ha-card kh-install"><p class="ha-card-text"><strong>iPhone:</strong> in Safari, tap Share, then Add to Home Screen.</p><p class="ha-card-text"><strong>Android:</strong> in Chrome, open the menu, then Add to home screen or Install app.</p><p class="ha-card-text">It then opens like an app and works without signal.</p></div>`, { id: 'install' })}
+    ${section('On your home screen', `<div class="ui-card kh-install"><p class="ui-card-text"><strong>iPhone:</strong> in Safari, tap Share, then Add to Home Screen.</p><p class="ui-card-text"><strong>Android:</strong> in Chrome, open the menu, then Add to home screen or Install app.</p><p class="ui-card-text">It then opens like an app and works without signal.</p></div>`, { id: 'install' })}
     ${section('About', '', { id: 'about', footer: 'Product suggestions are common Singapore supermarket goods; “keeps once opened” days are a rough guide, so check the label. Barcode look-ups use Open Food Facts. Shop links open FairPrice’s and Sheng Siong’s own search.' })}
     <div id="kh-version"></div>`;
 }
@@ -1127,7 +1127,7 @@ async function onClick(e) {
       const box = b.closest('.kh-dates'), input = b.closest('form').querySelector(`[name="${box.dataset.for}"]`);
       input.value = b.dataset.v;
       if (S.draft && input.closest('#kh-form')) { S.draft[input.name] = input.value; S.dirty = true; }
-      for (const c of box.querySelectorAll('.ha-chip')) c.setAttribute('aria-pressed', String(c === b));
+      for (const c of box.querySelectorAll('.ui-chip')) c.setAttribute('aria-pressed', String(c === b));
       return;
     }
     case 'sugg': {
@@ -1322,17 +1322,17 @@ function openPerson(email) {
   const canRemove = email !== h.owner && email !== S.user.email;
   const s = haSheet({
     title: names()[email] || 'Household member', closeLabel: 'Done', grey: true,
-    body: `<ul class="ha-list"><li><div class="ha-row"><span class="ha-row-icon">${icon('mail')}</span><span class="ha-row-body"><span class="ha-row-title kh-break">${esc(email)}</span>
-        <span class="ha-row-sub">${email === h.owner ? 'Started the household' : 'Signs in with this email'}${email === S.user.email ? ' · you' : ''}</span></span></div></li></ul>
+    body: `<ul class="ui-list"><li><div class="ui-row"><span class="ui-row-lead">${icon('mail')}</span><span class="ui-row-main"><span class="kh-row-title kh-break">${esc(email)}</span>
+        <span class="ui-row-sub">${email === h.owner ? 'Started the household' : 'Signs in with this email'}${email === S.user.email ? ' · you' : ''}</span></span></div></li></ul>
       <form id="kh-person" class="kh-person-form" novalidate>
         <label class="ha-field"><span class="ha-field-label">Name</span>
           <input class="ha-input" name="name" id="kh-person-name" value="${esc(names()[email] || '')}" maxlength="${NAME_MAX}" autocomplete="off" placeholder="For example, Mum or Ah Mei"></label>
-        <p class="ha-section-footer">Everyone in the household sees this name instead of the email. Leave it empty to show the email.</p>
-        <button type="submit" class="ha-btn ha-btn--primary ha-btn--block">Save name</button>
+        <p class="ui-section-foot">Everyone in the household sees this name instead of the email. Leave it empty to show the email.</p>
+        <button type="submit" class="ui-fill ui-wide">Save name</button>
       </form>
-      <ul class="ha-list kh-person-acts">
-        ${email !== S.user.email ? `<li><a class="ha-row ha-row--action" href="${esc(inviteHref(email))}"><span class="ha-row-icon">${icon('mail')}</span><span class="ha-row-body"><span class="ha-row-title">Email an invite</span><span class="ha-row-sub">From your own mail app, with the link</span></span></a></li>` : ''}
-        ${canRemove ? `<li><button type="button" class="ha-row ha-row--danger ha-row--center" data-act="member-del" data-v="${esc(email)}"><span class="ha-row-body"><span class="ha-row-title">Stop sharing</span></span></button></li>` : ''}
+      <ul class="ui-list kh-person-acts">
+        ${email !== S.user.email ? `<li><a class="ui-row" data-tone="action" href="${esc(inviteHref(email))}"><span class="ui-row-lead">${icon('mail')}</span><span class="ui-row-main"><span class="kh-row-title">Email an invite</span><span class="ui-row-sub">From your own mail app, with the link</span></span></a></li>` : ''}
+        ${canRemove ? `<li><button type="button" class="ui-row" data-tone="danger" data-align="center" data-act="member-del" data-v="${esc(email)}"><span class="ui-row-main"><span class="kh-row-title">Stop sharing</span></span></button></li>` : ''}
       </ul>`,
     onClose: afterSheet,
   });
@@ -1424,9 +1424,9 @@ function mergeCard() {
   const p = MG.plan(S.allHouseholds, S.household?.id, me());
   const notMine = [...new Set(p.notMine.map(h => personLabel(h.owner)))];
   const body = p.notMine.length && !S.allHouseholds.some(h => h.owner === me())
-    ? `<li><div class="ha-row"><span class="ha-row-icon">${icon('alert')}</span><span class="ha-row-body"><span class="ha-row-title">You’re in more than one household</span><span class="ha-row-sub kh-break">Ask ${esc(notMine.join(' or '))} to merge them.</span></span></div></li>`
-    : `<li><button type="button" class="ha-row ha-row--action" data-act="merge-open"><span class="ha-row-icon">${icon('alert')}</span><span class="ha-row-body"><span class="ha-row-title">You’re in more than one household</span><span class="ha-row-sub">Merge them into one</span></span>${chevron()}</button></li>`;
-  return section('Two households', `<ul class="ha-list">${body}</ul>`, { id: 'merge', footer: 'The same email is in more than one household, so you may see a different one on another phone. Merging moves everything into one.' });
+    ? `<li><div class="ui-row"><span class="ui-row-lead">${icon('alert')}</span><span class="ui-row-main"><span class="kh-row-title">You’re in more than one household</span><span class="ui-row-sub kh-break">Ask ${esc(notMine.join(' or '))} to merge them.</span></span></div></li>`
+    : `<li><button type="button" class="ui-row" data-tone="action" data-act="merge-open"><span class="ui-row-lead">${icon('alert')}</span><span class="ui-row-main"><span class="kh-row-title">You’re in more than one household</span><span class="ui-row-sub">Merge them into one</span></span>${chevron()}</button></li>`;
+  return section('Two households', `<ul class="ui-list">${body}</ul>`, { id: 'merge', footer: 'The same email is in more than one household, so you may see a different one on another phone. Merging moves everything into one.' });
 }
 // The merge sheet: each household (name, who started it, how many people), the one with the most people chosen to keep.
 async function openMerge() {
@@ -1439,16 +1439,16 @@ async function openMerge() {
   const body = $('.ha-sheet-body', s.el);
   const draw = () => {
     const p = MG.plan(all, keep, me());
-    const rows = all.map(h => `<li><label class="ha-row kh-pick"><span class="ha-row-body"><span class="ha-row-title kh-break">${esc(h.name || 'Our home')}</span>
-      <span class="ha-row-sub kh-break">${esc(plural((h.members || []).length, 'person', 'people'))} · started by ${esc(personLabel(h.owner))}</span></span>
+    const rows = all.map(h => `<li><label class="ui-row kh-pick"><span class="ui-row-main"><span class="kh-row-title kh-break">${esc(h.name || 'Our home')}</span>
+      <span class="ui-row-sub kh-break">${esc(plural((h.members || []).length, 'person', 'people'))} · started by ${esc(personLabel(h.owner))}</span></span>
       <input type="radio" name="kh-keep" value="${esc(h.id)}"${h.id === keep ? ' checked' : ''} aria-label="Keep ${esc(h.name || 'Our home')}, ${esc(plural((h.members || []).length, 'person', 'people'))}"></label></li>`).join('');
     const why = p.over ? `Together they have ${p.total} people and a household holds ${MG.MAX_MEMBERS}. Remove some people first, then merge.`
       : p.notMine.length ? `Only whoever started a household can merge it away. Ask ${[...new Set(p.notMine.map(h => personLabel(h.owner)))].join(' or ')} to merge them.` : '';
     body.innerHTML = `<p class="kh-em-lead">Choose the one to keep. Everything in the others (items, history, shopping lists, photos, places, names and people) moves into it, then the others are deleted.</p>
-      <ul class="ha-list" role="radiogroup" aria-label="Household to keep">${rows}</ul>
+      <ul class="ui-list" role="radiogroup" aria-label="Household to keep">${rows}</ul>
       ${why ? `<p class="ha-field-error" role="alert">${icon('alert')}<span>${esc(why)}</span></p>` : ''}
-      <p class="ha-section-footer" id="kh-merge-msg" role="status"></p>
-      <button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-pm="go"${p.canMerge ? '' : ' disabled'}>Merge into this one</button>`;
+      <p class="ui-section-foot" id="kh-merge-msg" role="status"></p>
+      <button type="button" class="ui-fill ui-wide" data-pm="go"${p.canMerge ? '' : ' disabled'}>Merge into this one</button>`;
   };
   draw();
   let busy = false;
@@ -1519,30 +1519,30 @@ function openEmailSheet({ confirm = false, onSubmit = null } = {}) {
   const s = haSheet({ title: confirm ? 'Finish signing in' : 'Sign in with email', closeLabel: 'Cancel', grey: true, body: '', onClose: afterSheet });
   const body = $('.ha-sheet-body', s.el);
   const emailField = (hint = '') => `<label class="ha-field"><span class="ha-field-label">Email</span>
-      <input class="ha-input" id="kh-em-email" name="email" type="email" value="${esc(mail)}" autocomplete="email" autocapitalize="off" spellcheck="false" inputmode="email" placeholder="you@example.com"${hint ? ' aria-describedby="kh-em-hint"' : ''}></label>${hint ? `<p class="ha-section-footer kh-em-hint" id="kh-em-hint">${hint}</p>` : ''}`;
+      <input class="ha-input" id="kh-em-email" name="email" type="email" value="${esc(mail)}" autocomplete="email" autocapitalize="off" spellcheck="false" inputmode="email" placeholder="you@example.com"${hint ? ' aria-describedby="kh-em-hint"' : ''}></label>${hint ? `<p class="ui-section-foot kh-em-hint" id="kh-em-hint">${hint}</p>` : ''}`;
   const errBox = () => `<p class="ha-field-error" id="kh-em-err" role="alert"${err ? '' : ' hidden'}>${icon('alert')}<span>${esc(err)}</span></p>`;
   const views = {
     email: () => `<form id="kh-em-form" novalidate>${emailField('Use the email the household added. No password needed: we email you a link that signs you in.')}${errBox()}
-        <button type="submit" class="ha-btn ha-btn--primary ha-btn--block" data-pe="link">Email me a sign-in link</button>
-        <button type="button" class="ha-btn ha-btn--block kh-em-second" data-pe="pw">Use a password</button></form>`,
+        <button type="submit" class="ui-fill ui-wide" data-pe="link">Email me a sign-in link</button>
+        <button type="button" class="ui-tint ui-wide kh-em-second" data-pe="pw">Use a password</button></form>`,
     password: () => `<form id="kh-em-form" novalidate>${emailField()}
         <label class="ha-field"><span class="ha-field-label">Password</span>
           <input class="ha-input" id="kh-em-pass" name="password" type="password" autocomplete="current-password" minlength="${C.MIN_PASSWORD}" aria-describedby="kh-em-phint"></label>
-        <p class="ha-section-footer kh-em-hint" id="kh-em-phint">New here? Choose at least ${C.MIN_PASSWORD} characters, then tap Create account. We email a link to check the address.</p>${errBox()}
-        <button type="submit" class="ha-btn ha-btn--primary ha-btn--block" data-pe="signin">Sign in</button>
-        <button type="button" class="ha-btn ha-btn--block kh-em-second" data-pe="create">Create account</button>
-        <div class="kh-em-links"><button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-pe="forgot">Forgot password?</button>
-          <button type="button" class="ha-btn ha-btn--plain ha-btn--compact" data-pe="back">Email me a link instead</button></div></form>`,
-    sent: () => `<div class="kh-em-note"><span class="ha-row-icon">${icon('mail')}</span><div><p class="kh-em-title">Check your email</p>
+        <p class="ui-section-foot kh-em-hint" id="kh-em-phint">New here? Choose at least ${C.MIN_PASSWORD} characters, then tap Create account. We email a link to check the address.</p>${errBox()}
+        <button type="submit" class="ui-fill ui-wide" data-pe="signin">Sign in</button>
+        <button type="button" class="ui-tint ui-wide kh-em-second" data-pe="create">Create account</button>
+        <div class="kh-em-links"><button type="button" class="ui-plain" data-size="small" data-pe="forgot">Forgot password?</button>
+          <button type="button" class="ui-plain" data-size="small" data-pe="back">Email me a link instead</button></div></form>`,
+    sent: () => `<div class="kh-em-note"><span class="ui-row-lead">${icon('mail')}</span><div><p class="kh-em-title">Check your email</p>
         <p>We sent a sign-in link to <strong class="kh-break">${esc(mail)}</strong>. Tap it on this phone and you’re in.</p>
         <p>On an iPhone the link may open in Safari instead of the home-screen app. That’s fine: you’ll be signed in there. In the home-screen app, use a password instead, or ask for the link from inside the home-screen app.</p></div></div>${errBox()}
-      <button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-pe="link">Send it again</button>
-      <button type="button" class="ha-btn ha-btn--block kh-em-second" data-pe="pw">Use a password instead</button>`,
-    reset: () => `<div class="kh-em-note"><span class="ha-row-icon">${icon('mail')}</span><div><p class="kh-em-title">Check your email</p>
+      <button type="button" class="ui-fill ui-wide" data-pe="link">Send it again</button>
+      <button type="button" class="ui-tint ui-wide kh-em-second" data-pe="pw">Use a password instead</button>`,
+    reset: () => `<div class="kh-em-note"><span class="ui-row-lead">${icon('mail')}</span><div><p class="kh-em-title">Check your email</p>
         <p>We sent a link to <strong class="kh-break">${esc(mail)}</strong>. Open it, choose a new password, then come back and sign in.</p></div></div>
-      <button type="button" class="ha-btn ha-btn--primary ha-btn--block" data-pe="pw">Back to sign in</button>`,
+      <button type="button" class="ui-fill ui-wide" data-pe="pw">Back to sign in</button>`,
     confirm: () => `<form id="kh-em-form" novalidate><p class="kh-em-lead">You opened a sign-in link. Type the email it was sent to, to finish.</p>${emailField()}${errBox()}
-        <button type="submit" class="ha-btn ha-btn--primary ha-btn--block" data-pe="finish">Sign in</button></form>`,
+        <button type="submit" class="ui-fill ui-wide" data-pe="finish">Sign in</button></form>`,
   };
   const draw = (focus = true) => {
     body.innerHTML = views[step]();

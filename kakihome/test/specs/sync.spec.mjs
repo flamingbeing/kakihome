@@ -24,7 +24,7 @@ async function person(phone, name, email, hid) {
   return p;
 }
 const go = (p, h) => p.evaluate(x => { location.hash = x; }, h);
-const sub = (p, name) => p.locator('#kh-items-list .ha-row', { hasText: name }).locator('.ha-row-sub');
+const sub = (p, name) => p.locator('#kh-items-list .ui-row', { hasText: name }).locator('.ui-row-sub');
 const sheetOpen = p => p.locator('dialog.ha-sheet[open]');
 const personRow = (p, email) => p.locator(`#main [data-act="person"][data-v="${email}"]`);
 const household = (fsAdmin, id, owner, members) => fsAdmin.put(`households/${id}`, { name: 'Our home', owner, members, createdAt: HOME });
@@ -35,10 +35,10 @@ test('start a household, add someone by email, name them, invite them; both phon
   const mumE = `mum-${uid}@example.com`, dadE = `dad-${uid}@example.com`;
   const mum = await person(phone, 'mum', mumE);
   await mum.click('[data-act="hh-create"]');
-  await expect(mum.locator('#main .ha-row-title', { hasText: 'Our home' })).toBeVisible();
+  await expect(mum.locator('#main .kh-row-title', { hasText: 'Our home' })).toBeVisible();
   await mum.fill('#kh-member-email', dadE.replace('dad-', 'Dad-').replace('example', 'Example'));
   await mum.click('#kh-member-add button[type=submit]');
-  await expect(mum.locator('#main .ha-row-title', { hasText: dadE })).toBeVisible();
+  await expect(mum.locator('#main .kh-row-title', { hasText: dadE })).toBeVisible();
   // an invite from Mum's own mail app: the toast offers it, and Dad's card keeps it for later
   await expect(mum.locator('.toast-action', { hasText: 'Email invite' })).toBeVisible();
   await mum.click(`[data-act="person"][data-v="${dadE}"]`);
@@ -51,8 +51,8 @@ test('start a household, add someone by email, name them, invite them; both phon
   // name him: the list shows the name with the email underneath
   await mum.fill('#kh-person-name', '  Dad  ');
   await card.locator('button[type=submit]').click();
-  await expect(mum.locator(`[data-act="person"][data-v="${dadE}"] .ha-row-title`)).toHaveText('Dad');
-  await expect(mum.locator(`[data-act="person"][data-v="${dadE}"] .ha-row-sub`)).toContainText(dadE);
+  await expect(mum.locator(`[data-act="person"][data-v="${dadE}"] .kh-row-title`)).toHaveText('Dad');
+  await expect(mum.locator(`[data-act="person"][data-v="${dadE}"] .ui-row-sub`)).toContainText(dadE);
   // the owner's own card: no Stop sharing
   await mum.click(`[data-act="person"][data-v="${mumE}"]`);
   await expect(sheetOpen(mum).locator('.ha-sheet-title')).toBeVisible();
@@ -64,21 +64,21 @@ test('start a household, add someone by email, name them, invite them; both phon
   await expect(mum.locator('.toast', { hasText: 'sample items' })).toBeVisible();
 
   const dad = await person(phone, 'dad', dadE);
-  await expect(dad.locator('#main .ha-row-title', { hasText: 'Our home' })).toBeVisible();
+  await expect(dad.locator('#main .kh-row-title', { hasText: 'Our home' })).toBeVisible();
   // the name reached Dad's phone too
-  await expect(dad.locator(`[data-act="person"][data-v="${dadE}"] .ha-row-title`)).toHaveText('Dad');
+  await expect(dad.locator(`[data-act="person"][data-v="${dadE}"] .kh-row-title`)).toHaveText('Dad');
   await go(dad, '#/items');
-  await expect(dad.locator('#kh-items-list .ha-row', { hasText: 'Kaya' })).toBeVisible();
+  await expect(dad.locator('#kh-items-list .ui-row', { hasText: 'Kaya' })).toBeVisible();
   // dad uses up the kaya; mum's screen follows
   await go(mum, '#/items');
   await expect(sub(mum, 'Kaya')).toContainText('1 left');
-  await dad.locator('#kh-items-list a.ha-row', { hasText: 'Kaya' }).click();
+  await dad.locator('#kh-items-list a.ui-row', { hasText: 'Kaya' }).click();
   await dad.locator('[data-act="use"]').first().click();
   await expect(sub(mum, 'Kaya')).toContainText('None left');
   // and the history says who
   const kaya = await mum.evaluate(() => [...window.__kakihome.S.items.values()].find(i => i.name === 'Kaya').id);
   await go(mum, '#/item/' + kaya);
-  await expect(mum.locator('#main .ha-row-sub', { hasText: 'Dad' }).first()).toBeVisible();
+  await expect(mum.locator('#main .ui-row-sub', { hasText: 'Dad' }).first()).toBeVisible();
 });
 
 test('an outsider is denied everything; member names have a fixed shape; a member can’t remove the owner', async ({ phone, fsAdmin, uid }) => {
@@ -193,7 +193,7 @@ test('the app moves a real old-style photo by itself, the household sees it, del
   expect((await fsAdmin.get(`households/${hid}/photos/old2`))?.data, 'its photo moved to photos/old2 unchanged').toBe(real);
   // and the household sees it: dad's list shows the thumbnail, his item screen the photo
   await go(dad, '#/items');
-  await expect(dad.locator('#kh-items-list a.ha-row', { hasText: 'Old photo' }).locator('img.ha-row-thumb')).toHaveAttribute('src', moved.thumb);
+  await expect(dad.locator('#kh-items-list a.ui-row', { hasText: 'Old photo' }).locator('img.ui-row-thumb')).toHaveAttribute('src', moved.thumb);
   await go(dad, '#/item/old2');
   await expect(dad.locator('#kh-hero')).toHaveAttribute('src', real);
   // deleting an item in the app deletes its photo
@@ -210,7 +210,7 @@ test('names never hide anyone', async ({ phone, fsAdmin, uid }) => {
   const mum = await person(phone, 'mum', mumE, hid);
   const dad = await person(phone, 'dad', dadE, hid);
   const listed = p => p.$$eval('#main [data-act="person"]', bs => bs.map(b => b.dataset.v));
-  const rowsOf = p => p.$$eval('#main [data-act="person"]', bs => bs.map(b => `${b.dataset.v}=${b.querySelector('.ha-row-title').textContent}`));
+  const rowsOf = p => p.$$eval('#main [data-act="person"]', bs => bs.map(b => `${b.dataset.v}=${b.querySelector('.kh-row-title').textContent}`));
   await mum.fill('#kh-member-email', granE);
   await mum.click('#kh-member-add button[type=submit]');
   await expect(personRow(mum, granE)).toBeVisible();
@@ -230,12 +230,12 @@ test('names never hide anyone', async ({ phone, fsAdmin, uid }) => {
   await nameSelf(gran, granE, 'Gran');
   for (const [who, p] of [['mum', mum], ['dad', dad], ['gran', gran]]) {
     await go(p, '#/settings');
-    await expect(personRow(p, granE).locator('.ha-row-title')).toHaveText('Gran');
+    await expect(personRow(p, granE).locator('.kh-row-title')).toHaveText('Gran');
     await expect.poll(() => rowsOf(p), { message: `${who} lists everyone with names` }).toEqual([`${mumE}=Jun`, `${dadE}=Dad`, `${granE}=Gran`]);
     await p.reload();
     await p.waitForFunction(() => window.__kakihome?.S.household?.members?.length === 3);
     await go(p, '#/settings');
-    await expect(personRow(p, granE).locator('.ha-row-title')).toHaveText('Gran');
+    await expect(personRow(p, granE).locator('.kh-row-title')).toHaveText('Gran');
     expect(await listed(p), `${who} lists everyone after a reload`).toEqual(everyone);
   }
   // a second, one-person household for Mum (what a second "Start our household" leaves behind) that sorts first must
@@ -365,7 +365,7 @@ test('a double tap on Start our household makes one household, not two', async (
   const quickE = `quick-${uid}@example.com`;
   const quick = await person(phone, 'quick', quickE);
   await quick.locator('[data-act="hh-create"]').dblclick();
-  await expect(quick.locator('#main .ha-row-title', { hasText: 'Our home' })).toBeVisible();
+  await expect(quick.locator('#main .kh-row-title', { hasText: 'Our home' })).toBeVisible();
   await expect.poll(() => fsAdmin.owned(quickE), { message: 'one household after a double tap' }).toBe(1);
 });
 

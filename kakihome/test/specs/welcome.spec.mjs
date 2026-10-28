@@ -103,8 +103,8 @@ test('first steps: the quick start, then the checklist ticks as things are done'
   await next(page).click();
   await welcomeSheet(page).locator('[data-kh-w="start"]').click();
   const starter = sheet(page);
-  await expect.poll(() => starter.locator('.kh-start-chips .ha-chip').count(), { message: 'the quick start offers everyday things' }).toBeGreaterThanOrEqual(20);
-  for (const n of ['Fresh milk', 'Eggs', 'Thai hom mali rice', 'Bathroom tissue']) await starter.locator('.kh-start-chips .ha-chip', { hasText: n }).first().click();
+  await expect.poll(() => starter.locator('.kh-start-chips .ui-chip').count(), { message: 'the quick start offers everyday things' }).toBeGreaterThanOrEqual(20);
+  for (const n of ['Fresh milk', 'Eggs', 'Thai hom mali rice', 'Bathroom tissue']) await starter.locator('.kh-start-chips .ui-chip', { hasText: n }).first().click();
   await expect(page.locator('#kh-start-go'), 'the button counts the picks').toHaveText('Add 4 items');
   await axe(page, 'quick start');
   await shot(page, 't1-quick-start');
