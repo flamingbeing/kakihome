@@ -6,6 +6,10 @@
 - 23 Oct 2026: browser and emulator tests are Playwright Test specs (`npx playwright test`, CI job `specs`); details in
   `kakihome/STATUS.md`.
 - 25 Oct 2026: data path moved to app-sync 0.4.1 and update 0.2.0 (`kakihome/NOTES.md`).
+- 28 Oct 2026: app-sync 1.4.0 (`auth()` + `sync()` modules) and the UI kit pins (`@core/ui`, `@core/theme`, look A, pinned
+  rc.16): theme, look and density in Settings > This device, kit confirm dialogs. Screens still on the home kit (`ha-*`):
+  Home, Items, Shopping, Settings, sheets; the kit toaster waits on a tap-size fix in the kit. Service-worker list:
+  `node tools/sw-files.mjs kakihome`. Screens: `docs/m2-screens/`.
 
 ## Waiting on the owner
 -

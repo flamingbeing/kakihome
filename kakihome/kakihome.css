@@ -1,6 +1,26 @@
 /* Kaki Home: the app's own content styles, on top of the home app kit (https://design.flamingbeing.com/v1/app.css, DESIGN-APP.md).
    Every class starts with kh-. Only tokens from https://design.flamingbeing.com/v1/tokens.css; no new colours. */
 
+/* The UI kit's look, theme and density reach the home-kit screens through its tokens: once the kit has painted the
+   device's choice (<html data-look>, js/boot.js), each --home-* colour, radius and bar reads the kit's token. Guarded by
+   data-look because the kit's own tokens start from --home-* (theme.css), so before it has painted the two must not
+   point at each other. */
+html[data-look] {
+  --home-bg: var(--bg); --home-surface: var(--surface); --home-surface-2: color-mix(in srgb, var(--surface) 60%, var(--bg));
+  --home-fill: color-mix(in srgb, var(--text) 8%, var(--bg)); --home-fill-strong: color-mix(in srgb, var(--text) 14%, var(--bg));
+  --home-ink: var(--text); --home-ink-2: color-mix(in srgb, var(--text) 85%, var(--bg)); --home-muted: var(--muted);
+  --home-line: color-mix(in srgb, var(--line) 35%, transparent); --home-line-strong: color-mix(in srgb, var(--line) 60%, transparent);
+  --home-control: var(--line);
+  --home-accent: var(--accent); --home-on-accent: var(--on-accent);
+  --home-accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  --home-accent-soft-press: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  --home-ok: var(--ok); --home-ok-bg: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  --home-warn: var(--warn); --home-warn-bg: color-mix(in srgb, var(--warn) 16%, var(--surface));
+  --home-bad: var(--danger); --home-bad-bg: color-mix(in srgb, var(--danger) 13%, var(--surface));
+  --home-bar: var(--glass, var(--surface));
+  --home-r-md: var(--radius-button); --home-r-lg: var(--card-r); --home-focus: var(--focus);
+}
+
 .kh-wrap{white-space:normal;overflow-wrap:anywhere;text-align:right}
 
 /* a problem worth seeing (sync failed) */
@@ -109,3 +129,8 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .kh-side h3{font-size:1rem;margin:0 0 .25rem}.kh-side-v{margin:0}
 .kh-row{display:flex;gap:var(--home-s2);flex-wrap:wrap;margin:var(--home-s2) 0}
 .kh-row .ha-btn[aria-pressed=true]{outline:2px solid currentColor}
+
+/* This device (Settings): the kit's theme switch, set in the grouped-list look of its neighbours */
+#kh-theme .theme-switch{display:grid;gap:var(--home-s3);padding:var(--home-s4);border-radius:var(--home-r-lg);background:var(--home-surface)}
+#kh-theme .theme-switch>label{display:flex;align-items:center;justify-content:space-between;gap:var(--home-s3);color:var(--home-ink)}
+#kh-theme .theme-switch select{max-width:60%;min-height:44px;color:var(--home-ink)}
