@@ -84,7 +84,7 @@ test('a camera picture: thumbnail on the item, photo on its own, read only when 
   await shot(page, '30-item-photo');
   // lists use the thumbnail
   await go(page, '#/items');
-  await expect(page.locator('#kh-items-list a.ha-row', { hasText: 'Photo test sauce' }).locator('img.ha-row-thumb'), 'the list shows the thumbnail').toHaveAttribute('src', added.thumb);
+  await expect(page.locator('#kh-items-list a.ui-row', { hasText: 'Photo test sauce' }).locator('img.ui-row-thumb'), 'the list shows the thumbnail').toHaveAttribute('src', added.thumb);
   await go(page, '#/');
   expect(await page.evaluate(() => [...document.querySelectorAll('img')].every(i => !i.src.startsWith('data:') || i.src.length <= 12288)), 'Home has no full photos').toBe(true);
 

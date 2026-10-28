@@ -39,7 +39,7 @@ async function openLink(p, c, hash = '#/settings') {
 
 test('the sign-in card: Google first, email as the quiet second way, plain words for bad input', async ({ phone, axe }) => {
   const a = await settings(phone, 'card');
-  await expect(a.locator('[data-act="signin"] .ha-row-title')).toHaveText('Continue with Google');
+  await expect(a.locator('[data-act="signin"] .kh-row-title')).toHaveText('Continue with Google');
   await expect(a.locator('[data-act="email-open"]')).toHaveText('Use email instead');
   await axe(a, 'sign-in card', TAGS);
   await openEmailSheet(a);

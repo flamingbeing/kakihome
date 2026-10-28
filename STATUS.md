@@ -12,6 +12,9 @@
   `docs/m2-screens/`.
 - 28 Oct 2026: UI kit rc.25; the kit toaster (`--ui-toast-bottom` above the tab bar) and the kit conflict sheet (field
   labels in words) replace the app's own. Before/after: `docs/m2p2-screens/`.
+- 28 Oct 2026: UI kit rc.29; screen content (lists, rows, sections, cards, stats, badges, chips, empty states, buttons)
+  on the kit's content parts. Still on the home kit (`ha-*`): the shell (bar, large titles, tab bar), sheets and form
+  fields. Before/after: `docs/m2p2-screens/cmp-*.png`.
 
 ## Waiting on the owner
 -

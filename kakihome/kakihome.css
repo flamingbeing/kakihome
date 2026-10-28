@@ -31,7 +31,7 @@ html[data-look] {
 .kh-hero{display:block;width:100%;max-height:240px;margin:0 0 var(--home-s5);border-radius:var(--home-r-lg);object-fit:cover;background:var(--home-fill)}
 .kh-batch{row-gap:var(--home-s2)}
 .kh-batch-acts{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:var(--home-s2);margin:2px 0 4px}
-.kh-batch-acts .ha-btn--quiet{background:var(--home-fill);color:var(--home-ink-2)}
+.kh-batch-acts .ui-plain{background:var(--home-fill);color:var(--home-ink-2)}
 .kh-actions{margin:calc(-1 * var(--home-s2)) 0 var(--home-s6)}
 .kh-cols-label{margin:var(--home-s4) 0 var(--home-s2);color:var(--home-muted);font-size:var(--home-t-small)}
 .kh-cols{height:120px}
@@ -40,8 +40,8 @@ html[data-look] {
 /* add and edit */
 .kh-finder .ha-search{margin-bottom:var(--home-s2)}
 .kh-finder #kh-sugg{margin:0 0 var(--home-s2)}
-.kh-finder .ha-btn-row{margin:var(--home-s2) 0 0}
-.kh-finder .ha-btn-row>.ha-btn{flex:0 1 auto}
+.kh-finder .kh-btn-row{margin:var(--home-s2) 0 0}
+.kh-finder .kh-btn-row>button{flex:0 1 auto}
 .kh-photo-row{display:flex;gap:var(--home-s3);align-items:flex-start}
 .kh-photo-fields{flex:1;min-width:0}
 .kh-photo{position:relative;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:88px;height:88px;
@@ -56,12 +56,12 @@ html[data-look] {
 .kh-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,9em),1fr));column-gap:var(--home-s3)}
 .kh-gap{margin-top:var(--home-s4);margin-bottom:var(--home-s2)}
 .kh-dates{margin-top:0}
-label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outline-offset:-3px;border-radius:var(--home-r-lg)}
+label.ui-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outline-offset:-3px;border-radius:var(--home-r-lg)}
 
 /* a one-line form: shopping list, family member */
 .kh-addline{display:flex;gap:var(--home-s2);align-items:center;margin:0 0 var(--home-s5)}
 .kh-addline .ha-input{flex:1;min-width:0;min-height:44px;padding-block:8px}
-.kh-addline .ha-btn{flex:none}
+.kh-addline button{flex:none}
 .kh-member{margin:var(--home-s3) 0 0}
 
 /* the barcode scanner sheet */
@@ -70,15 +70,15 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .kh-scan-msg{margin:var(--home-s3) 0;color:var(--home-ink-2)}
 .kh-file-btn{position:relative}
 .kh-file-btn:focus-within{outline:2px solid var(--home-focus);outline-offset:2px}
-.kh-install .ha-card-text+.ha-card-text{margin-top:var(--home-s2)}
+.kh-install .ui-card-text+.ui-card-text{margin-top:var(--home-s2)}
 
 /* home and lists: the three numbers stay in one row; a name keeps its words whole (the badge moves under it first) */
 .kh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-.kh-goal .ha-card-title{font-size:var(--home-t-title1);font-variant-numeric:tabular-nums}
+.kh-goal .ui-card-title{font-size:var(--home-t-title1);font-variant-numeric:tabular-nums}
 .kh-quick-text{width:100%;min-height:6.5em;resize:vertical}
 .kh-mic.is-on{background:var(--home-bad);color:#fff}
-.kh-item .ha-row-body{flex-basis:8em}
-.kh-item .ha-row-title{overflow-wrap:break-word}
+.kh-item .ui-row-main{flex-basis:8em}
+.kh-item .kh-row-title{overflow-wrap:break-word}
 
 /* the welcome sheet (js/guide.js): an icon, a title and a line, then kit rows; dots and the buttons in the foot */
 .kh-welcome{touch-action:pan-y}
@@ -97,15 +97,15 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 /* the guide screen */
 .kh-gagain{margin:var(--home-s2) 0 var(--home-s6)}
 .kh-stat{color:inherit;text-decoration:none}
-.kh-stat .ha-stat-value{color:var(--home-accent)}
+.kh-stat .ui-stat-value{color:var(--home-accent)}
 /* first steps (js/tour.js): the Getting started checklist, the quick start chips, and the Show me ring */
 .kh-tour-mark{flex:none;display:grid;place-items:center;width:26px;height:26px;border:2px solid var(--home-line-strong);border-radius:50%;color:#fff}
 .kh-tour-row.is-done .kh-tour-mark{border-color:var(--home-ok);background:var(--home-ok)}
 .kh-tour-mark .ha-icon{width:16px;height:16px}
-.kh-tour-row.is-done .ha-row-title{color:var(--home-muted);text-decoration:line-through}
+.kh-tour-row.is-done .kh-row-title{color:var(--home-muted);text-decoration:line-through}
 .kh-tour-foot{margin:var(--home-s1) 0 0;text-align:right}
 .kh-start-intro{margin:0 0 var(--home-s3)}
-.kh-start-chips .ha-chip[disabled]{opacity:.6}
+.kh-start-chips .ui-chip[disabled]{opacity:.6}
 .kh-spot{outline:3px solid var(--home-accent);outline-offset:3px;animation:kh-spot 1.2s ease-in-out 3}
 @keyframes kh-spot{50%{outline-offset:7px}}
 @media (prefers-reduced-motion:reduce){.kh-spot{animation:none}}
@@ -135,3 +135,12 @@ label.ha-row:focus-within:has(.kh-file){outline:2px solid var(--home-focus);outl
 .ha-has-tabbar{--ui-toast-bottom:calc(var(--ha-tab-h) + var(--ha-safe-b) + var(--home-s3))}
 @media (min-width:768px){.ha-has-tabbar{--ui-toast-bottom:calc(var(--home-s6) + var(--ha-safe-b))}}
 #kh-attention{display:none}
+/* kit parts (app-ui content parts): the old home kit's row title, button row, round icon button, chip count and card kicker */
+.kh-row-title{display:block;line-height:1.35;overflow-wrap:anywhere}
+.kh-btn-row{display:flex;gap:var(--gap);margin:calc(var(--gap) * 1.5) 0}
+.kh-btn-row>*{flex:1;min-width:0}
+.kh-icon-btn{width:44px;min-width:44px;min-height:44px;padding:0;border-radius:50%}
+.kh-chip-count{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.kh-card-kicker{margin:0 0 2px;color:var(--muted);font-size:.75rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+/* the home kit's main column already has the side gutter, so kit lists and cards sit flush in it */
+.ha-main{--list-inset:0}
