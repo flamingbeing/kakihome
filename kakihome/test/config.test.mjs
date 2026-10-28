@@ -56,22 +56,26 @@ assert.ok(sw.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'r
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
 assert.ok(app.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'the page loads the same register.js');
 assert.ok(!/take-over|skipWaiting|Update ready/.test(app), 'no update toast or take-over message left');
-// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and the sync engine 0.7.3
+// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and app-sync 1.4.0
+// (the page's import map: @core/app, @core/auth, @core/sync)
 assert.equal(core, '0.2.0', 'the update module');
 assert.match(app, /register\(\{[^}]*canReload: reloadOk/, 'the reload after an update asks canReload');
 const cloud = fs.readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8');
-const syncPin = cloud.match(/const SYNC = 'https:\/\/core\.anawj\.com\/sync\/(\d+\.\d+\.\d+)\/index\.js'/)?.[1];
-assert.equal(syncPin, '0.7.3', 'cloud.js pins the sync engine exactly');
-// the engine is precached whole (install is all or nothing, and the app opens offline): index.js and every module it loads
-const engine = ['index.js', ...'sync writes conflict store outbox watchdog persist status firestore forget registry report app cache'.split(' ').map(m => `src/${m}.js`)];
-for (const f of engine) assert.ok(sw.includes(`'https://core.anawj.com/sync/${syncPin}/${f}'`), 'sw.js SHELL has the engine file ' + f);
-assert.ok(!/sync\/(?!0\.7\.3)\d+\.\d+\.\d+\//.test(sw + app + cloud), 'no other engine version anywhere');
-assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com/, 'pinned core files are cached as they are fetched');
-// the engine is wired by one createApp call (sign-in, the queue, the hub, the watchdog, the status, sign-out through
-// forgetDevice); nothing of it is wired by hand here any more
-assert.equal((cloud.match(/AS\.createApp\(/g) || []).length, 1, 'one createApp');
-assert.ok(!/AS\.(createSyncHub|createWriteQueue|createStores|createOutbox|createWatchdog|createFirestoreBackend|forgetDevice|persistGuard|replanOnWake|syncStatus)\(/.test(cloud), 'no hand wiring of the engine left');
-assert.ok(!/A\.(signInWithPopup|signInWithRedirect|getRedirectResult|onAuthStateChanged|signOut)\(/.test(cloud), 'Google sign-in and sign-out are createApp\'s');
+const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const map = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+for (const n of ['app', 'auth', 'sync']) assert.equal(map['@core/' + n], `https://core.anawj.com/sync/1.4.0/${n}.js`, '@core/' + n);
+assert.ok(!('@core/update' in map), 'the update core is register.js, not the module');
+const uiVer = map['@core/ui'].match(/\/ui\/([^/]+)\//)[1];
+for (const n of ['ui', 'theme', 'settings']) assert.equal(map['@core/' + n], `https://core.anawj.com/ui/${uiVer}/${n}/index.js`, '@core/' + n + ' on one ui version');
+// the entries and what they import are precached whole (install is all or nothing, and the app opens offline)
+for (const f of ['app.js', 'auth.js', 'sync.js', 'src/module-sync.js', 'src/core.js', 'src/outbox.js']) assert.ok(sw.includes(`'https://core.anawj.com/sync/1.4.0/${f}'`), 'sw.js SHELL has ' + f);
+for (const f of ['ui/index.js', 'theme/index.js', 'settings/index.js', 'theme/theme.css', 'ui/ui.css', 'theme/glass.css', 'theme/early.js']) assert.ok(sw.includes(`'https://core.anawj.com/ui/${uiVer}/${f}'`), 'sw.js SHELL has ' + f);
+assert.ok(!/sync\/(?!1\.4\.0)\d+\.\d+\.\d+\//.test(sw + app + cloud + html), 'no other engine version anywhere');
+assert.match(sw, /name: 'pinned', match: \/\^https:\\\/\\\/core\\\.anawj\\\.com\\\/\(sync\|update\|ui\)/, 'pinned core files are cached as they are fetched');
+// the engine is wired by one createApp call with the auth and sync modules; nothing of it is wired by hand here
+assert.equal((cloud.match(/const app = createApp\(/g) || []).length, 1, 'one createApp');
+assert.ok(!/(createSyncHub|createWriteQueue|createStores|createWatchdog|createFirestoreBackend|forgetDevice|persistGuard|replanOnWake|syncStatus)\(/.test(cloud), 'no hand wiring of the engine left');
+assert.ok(!/A\.(signInWithPopup|signInWithRedirect|getRedirectResult|onAuthStateChanged|signOut)\(/.test(cloud), 'Google sign-in and sign-out are the auth module\'s');
 assert.ok(!/F\.setDoc\(|F\.deleteDoc\(\s*F\.doc\(col/.test(cloud), 'no direct setDoc/deleteDoc for household data');
 assert.equal((cloud.match(/F\.onSnapshot\(/g) || []).length, 1, 'one onSnapshot left: the household document itself (the collections go through the hub)');
 console.log('kakihome config: ok');
@@ -122,6 +126,6 @@ console.log('email sign-in helpers ok');
   const others = fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'cloud.js');
   assert.ok(others.includes('app.js') && others.includes('store.js'), 'the scan sees the page modules');
   for (const f of others) assert.ok(!sdk.test(fs.readFileSync(new URL(f, dir), 'utf8')), f + ' calls Firebase directly; go through cloud.js');
-  assert.match(fs.readFileSync(new URL('cloud.js', dir), 'utf8'), /core\.anawj\.com\/sync\/\d+\.\d+\.\d+\/index\.js/, 'cloud.js saves through app-sync');
+  assert.match(fs.readFileSync(new URL('cloud.js', dir), 'utf8'), /import\('@core\/sync'\)/, 'cloud.js saves through app-sync');
 }
 console.log('Firebase only behind cloud.js ok');

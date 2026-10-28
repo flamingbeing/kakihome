@@ -295,13 +295,14 @@ export async function removeHousehold(hid) {
 // in a transaction, one document at a time and in order: nothing waits in the SDK's own offline queue, so a refused save
 // is kept and a save made offline survives a reload. Each kind has a copy on this phone and listens only for documents
 // changed since the last sync (`updatedAt`, stamped by the adapter at commit), so a quiet reopen reads about one document
-// a kind. Saves are held conflicts by field (app-sync 0.6.4+, the core's default for every app): different fields merge on
+// a kind. Saves are held conflicts by field (the core's default for every app): different fields merge on
 // their own, the same field changed to the same value is no conflict, and a field changed on both phones to different
 // values holds the save on the phone that sent it second until its person chooses (`onConflicts`, `resolve`; nothing is
 // overwritten without asking). Photos stay last write wins (one blob per item). A delete writes a
 // `bin` entry in the same transaction, which is how the other phones' delta listeners hear of it. createApp also brings
 // the watchdog, the status, the storage guard at sign-in and the sign-out order (forgetDevice).
-const SYNC = 'https://core.anawj.com/sync/0.7.3/index.js';
+// (app-sync 1.x: createApp({ config, modules: [auth(), sync()] }), loaded through the page's import map, one exact
+// version in index.html; the api is app.auth.* and app.sync.*.)
 // photos only: a save on a photo another phone deleted brings it back, as setDoc did
 const replace = (_current, record) => clean(record);
 // `bin` entry for a deleted document (items/events/shop/settings; a photo has none: it is read one at a time)
@@ -317,43 +318,48 @@ let engine = null, refused = null;
 function sync() {
   if (engine) return engine;
   engine = (async () => {
-    const AS = await import(SYNC);
-    leaveEntry = AS.leaveEntry;
-    return AS.createApp({
-      name: 'kakihome', colls: KINDS, path: (hid, kind) => ['households', hid, kind],
-      sdk: async () => ({ ...await sdk(), emulator: usingEmulator }),
-      device: deviceName(),
-      backend: { time: 'iso', held: true, edits: '_edits', merge: { [PHOTOS]: replace }, onCommit: binWrite },
-      stores: { metaOnly: ['bin'] },
-      hub: { unstamped: 'full', bin: 'bin' },
-      queue: {
-        // writes sent straight to the SDK (copying a household, restoring a backup) keep the sign-out check shut until acknowledged
-        otherPending: async () => { const { F, db } = await sdk(); return !(await Promise.race([F.waitForPendingWrites(db).then(() => true, () => false), new Promise(r => setTimeout(() => r(false), 1500))])); },
-      },
-      // a save the server refused: told to the app and set aside, so nothing is sent twice
-      onRefused: (err, x) => { console.warn('save failed', x.kind, err.code); refused?.(err); return 'archive'; },
-      redirectFirst: () => redirectFirst({ standalone: installedApp(), ua: globalThis.navigator?.userAgent || '' }),
+    const [{ createApp }, { auth }, S] = await Promise.all([import('@core/app'), import('@core/auth'), import('@core/sync')]);
+    leaveEntry = S.leaveEntry;
+    const app = createApp({
+      config: { name: 'kakihome', sdk: async () => ({ ...await sdk(), emulator: usingEmulator }) },
+      modules: [
+        auth({ redirectFirst: () => redirectFirst({ standalone: installedApp(), ua: globalThis.navigator?.userAgent || '' }) }),
+        S.sync({
+          colls: KINDS, path: (hid, kind) => ['households', hid, kind],
+          device: deviceName(),
+          backend: { time: 'iso', held: true, edits: '_edits', merge: { [PHOTOS]: replace }, onCommit: binWrite },
+          stores: { metaOnly: ['bin'] },
+          hub: { unstamped: 'full', bin: 'bin' },
+          queue: {
+            // writes sent straight to the SDK (copying a household, restoring a backup) keep the sign-out check shut until acknowledged
+            otherPending: async () => { const { F, db } = await sdk(); return !(await Promise.race([F.waitForPendingWrites(db).then(() => true, () => false), new Promise(r => setTimeout(() => r(false), 1500))])); }
+          },
+          // a save the server refused: told to the app and set aside, so nothing is sent twice
+          onRefused: (err, x) => { console.warn('save failed', x.kind, err.code); refused?.(err); return 'archive'; },
+        }),
+      ],
     });
+    await app.ready;
+    return app;
   })();
   engine.catch(() => { engine = null; });
   return engine;
 }
 
-export async function onUser(cb) { return (await sync()).onUser(cb); }
-export async function signIn() { return (await sync()).signIn(); }
+export async function onUser(cb) { return (await sync()).auth.onUser(cb); }
+export async function signIn() { return (await sync()).auth.signIn(); }
 // True when every change made on this phone has reached the household within ms (false offline or on a timeout), so
 // signing out doesn't silently drop changes still waiting for signal. It also refuses while another tab holds unsent
 // saves or a direct write (copy, restore) is unacknowledged.
-export async function synced(ms = 4000) { return engine ? (await engine).flush(ms) : true; }
+export async function synced(ms = 4000) { return engine ? (await engine).sync.flush(ms) : true; }
 // Sign-out on a shared phone (createApp: forgetDevice's order): stop the listeners, check again nothing is unsent, wipe
 // this phone's copy of the household, the outbox and the SDK's own offline cache, then sign out. With the real project
 // the SDK is terminated by that, so the page reloads (the emulator tests keep their page and cache). Resolves false
 // (nothing wiped, still signed in, the listeners started again) when saves turned up unsent.
 export async function signOut() {
-  const r = await (await sync()).signOut();
-  if (!r.ok) return false;
-  if (r.reload) { fb = null; setTimeout(() => location.reload(), 600); }
-  return true;
+  // the sync module reloads the page itself once the SDK's cache was cleared (the emulator tests keep their page)
+  const r = await (await sync()).auth.forget();
+  return r.ok;
 }
 
 // `onError(err)` hears of a write the server refused; `onSync(state)` of how the saving stands ({ state, count }: app-sync
@@ -364,7 +370,7 @@ export async function signOut() {
 export async function openCloud(hid, onError = () => {}, onSync = () => {}, onConflicts = () => {}) {
   const { F, db } = await sdk();
   const app = await sync();
-  await app.open(hid);
+  await app.sync.open(hid);
   refused = onError;
   const col = kind => F.collection(db, 'households', hid, kind);
   let closed = false, cb = null;
@@ -374,19 +380,19 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}, onCo
   const ready = Object.fromEntries(KINDS.map(k => { let done; const p = new Promise(r => { done = r; }); return [k, { p, done }]; }));
   // (told only once openCloud has returned: status$ answers at once, before the caller holds this household)
   let lastSt = null, live = false;
-  const offStatus = app.status$(st => { lastSt = st; if (live && !closed) onSync(st); });
+  const offStatus = app.sync.status$(st => { lastSt = st; if (live && !closed) onSync(st); });
   setTimeout(() => { live = true; if (!closed && lastSt) onSync(lastSt); }, 0);
-  const heldNow = () => app.conflicts().map(c => app.describe(c.key)).filter(Boolean);
+  const heldNow = () => app.sync.conflicts().map(c => app.sync.describe(c.key)).filter(Boolean);
   let heldSig = '';
   const tellHeld = () => { if (closed) return; const l = heldNow(), g = JSON.stringify(l); if (g !== heldSig) { heldSig = g; onConflicts(l); } };
-  const offHeld = app.queue.onChange(tellHeld);
+  const offHeld = app.sync.queue.onChange(tellHeld);
   setTimeout(tellHeld, 0);
   function enqueue(kind, record) {
     // base: the document as this phone had it (its last delivery) before this change, so a field changed only elsewhere
     // merges and only a field changed on both phones is held; a new document, and a photo (last write wins), have none
     const had = data[kind]?.get(record.id);
-    return app.save(kind, hid, record, had ? clean(had) : null)
-      .then(() => true, e => { if (app.queue.error()) { console.warn('outbox', e?.message); onError(e); } return false; });
+    return app.sync.save(kind, hid, record, had ? clean(had) : null)
+      .then(() => true, e => { if (app.sync.queue.error()) { console.warn('outbox', e?.message); onError(e); } return false; });
   }
   // the listeners: each kind's whole list from the engine (this phone's copy, then the server's changes), with this
   // phone's saves not yet sent laid over it; only what changed since the last delivery goes to the app
@@ -402,10 +408,10 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}, onCo
     else if (cb && (docs.length || removed.length)) cb(k, docs, removed);
   }
   let offs = [];
-  const startListening = () => { if (!offs.length && !closed) offs = KINDS.map(k => app.watch(hid, k, list => deliver(k, list))); };
+  const startListening = () => { if (!offs.length && !closed) offs = KINDS.map(k => app.sync.watch(hid, k, list => deliver(k, list))); };
   const stopListening = () => { offs.splice(0).forEach(off => off()); };
   startListening();
-  app.parts.watchdog.opened();
+  app.sync.parts.watchdog.opened();
   return {
     kind: 'cloud',
     // what this phone holds now (its copy, or the server's first answer): each kind's first list, or after a few seconds
@@ -419,7 +425,7 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}, onCo
     // promise (which callers may ignore) is true once the save is kept on this phone; a refusal comes through onError.
     put: (kind, obj) => enqueue(kind, clean(obj)),
     del: (kind, id) => {
-      if (KINDS.includes(kind)) void app.hub.drop(hid, kind, [id]);
+      if (KINDS.includes(kind)) void app.sync.hub.drop(hid, kind, [id]);
       enqueue(kind, { id, _deleted: true });
     },
     // One document (an item's photo, when the item is opened), or null when there is none. Offline it is the
@@ -435,8 +441,8 @@ export async function openCloud(hid, onError = () => {}, onSync = () => {}, onCo
     putMany: (kind, list) => writeAll(F, db, hid, kind, list),
     listen(fn) { cb = fn; startListening(); },
     // The listener watchdog: `nudge('resume')` at a moment the phone came back (online, visible, pageshow).
-    nudge: (event = '') => app.nudge(event),
-    resolve: (key, choice) => app.resolve(key, choice),
+    nudge: (event = '') => app.sync.nudge(event),
+    resolve: (key, choice) => app.sync.resolve(key, choice),
     close() { closed = true; stopListening(); offStatus(); offHeld(); if (refused === onError) refused = null; },
   };
 }
