@@ -22,6 +22,7 @@ const SHELL = [
   'icons/icon-maskable-512.png',
   'icons/icon.svg',
   'js/app.js',
+  'js/boot.js',
   'js/catalogue.js',
   'js/cloud.js',
   'js/guide.js',

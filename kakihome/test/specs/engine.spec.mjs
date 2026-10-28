@@ -95,13 +95,13 @@ test('signing out waits while saves are unsent, then wipes this phone’s copy a
   await mum.click('[data-act="signout"]');
   const ask = mum.locator('dialog[open]', { hasText: 'Sign out now?' });
   await expect(ask, 'unsent saves: asked first').toBeVisible({ timeout: 15_000 });
-  await ask.locator('button[value="no"]').click();
+  await ask.getByRole('button', { name: 'Wait' }).click();
   expect(await mum.evaluate(() => window.__kakihome.S.user?.email), 'still signed in').toBe(mumE);
   expect(await sync(mum), 'and nothing was dropped').toEqual({ state: 'saving', count: 1 });
   // "Sign out anyway" while saves are unsent: forgetDevice refuses, nothing is wiped, and the phone keeps listening
   await mum.click('[data-act="signout"]');
   await expect(ask).toBeVisible({ timeout: 15_000 });
-  await ask.locator('button[value="yes"]').click();
+  await ask.getByRole('button', { name: 'Sign out anyway' }).click();
   await expect(mum.locator('.ha-toast.is-visible', { hasText: 'still signed in' })).toBeVisible({ timeout: 15_000 });
   expect(await mum.evaluate(() => window.__kakihome.S.user?.email), 'still signed in after the refusal').toBe(mumE);
   await mum.context().unroute(BLOCK);

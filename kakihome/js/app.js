@@ -12,9 +12,15 @@ import { starterChoices, tourTasks } from './tour.js';
 import * as MG from './merge.js';
 import { firebaseConfig } from '../config.js';
 import {
-  haRouter, haGo, haBack, haSheet, haCloseSheet, haSheetOpen, haConfirm, haToast, haHideToast, haStepper, haVersion,
+  haRouter, haGo, haBack, haSheet, haCloseSheet, haSheetOpen, haToast, haHideToast, haStepper, haVersion,
   haIcon, haEsc as esc, haAnnounce, haLargeTitle,
 } from 'https://design.flamingbeing.com/v1/app.js';
+import { confirmModal } from '@core/ui';
+
+// Notes stay on the home kit's toast for now (the kit toaster's Dismiss button misses the tap-size rule and sits under the
+// home tab bar); questions are the UI kit's confirmModal.
+const toast = haToast, hideToast = haHideToast;
+const confirmAsk = ({ title, text, ok, cancel, danger }) => confirmModal(text, { title, danger, yes: ok, labels: cancel ? { cancel } : {} });
 
 const $ = (s, el = document) => el.querySelector(s);
 const params = new URLSearchParams(location.search);
@@ -174,12 +180,12 @@ async function migratePhotos() {
 
 // Apply a stock change from logic.js ({ item, event }) and offer Undo.
 function apply(res, msg) {
-  if (!res.event) { haToast('Nothing in stock to do that with'); return; }
+  if (!res.event) { toast('Nothing in stock to do that with'); return; }
   const before = S.items.get(res.item.id);
   save('items', res.item);
   save('events', res.event);
   redraw();
-  haToast(msg, { action: 'Undo', onAction: () => { save('items', before); remove('events', res.event.id); redraw(); haAnnounce('Undone'); } });
+  toast(msg, { action: 'Undo', onAction: () => { save('items', before); remove('events', res.event.id); redraw(); haAnnounce('Undone'); } });
 }
 
 // ---- small pieces --------------------------------------------------------------------------------------------------
@@ -356,7 +362,7 @@ function showMe(task) {
   if (task === 'use') {
     const all = items().filter(it => L.totalQty(it) > 0);
     const first = L.expiring(all, { days: 3650 })[0]?.item || all[0];
-    if (!first) { haToast('Add something first'); return openStarter(); }
+    if (!first) { toast('Add something first'); return openStarter(); }
     haGo('#/item/' + first.id);
     return spotlight('[data-act="use"]');
   }
@@ -413,7 +419,7 @@ function openStarter() {
     }
     await haCloseSheet(s.el);
     if (screen() !== 'home') haGo('#/', { replace: screen() === 'add' }); else redraw();
-    haToast(`Added ${plural(added.length, 'item')}`, { action: 'Undo', onAction: () => { for (const a of added) { remove('items', a.id); remove('events', a.ev); } redraw(); haAnnounce('Undone'); } });
+    toast(`Added ${plural(added.length, 'item')}`, { action: 'Undo', onAction: () => { for (const a of added) { remove('items', a.id); remove('events', a.ev); } redraw(); haAnnounce('Undone'); } });
   });
   return s;
 }
@@ -656,7 +662,7 @@ function submitForm(e) {
   if (base) {
     save('items', it);
     haBack('#/item/' + it.id);
-    haToast('Saved');
+    toast('Saved');
     return;
   }
   const qty = num(d.qty);
@@ -666,7 +672,7 @@ function submitForm(e) {
     save('items', res.item); ev = save('events', res.event);
   } else save('items', it);
   haGo('#/item/' + it.id, { replace: true });
-  haToast(`${it.name} added`, { action: 'Undo', onAction: () => { remove('items', it.id); if (ev) remove('events', ev.id); if (it.hasPhoto) delPhoto(it.id); redraw(); } });
+  toast(`${it.name} added`, { action: 'Undo', onAction: () => { remove('items', it.id); if (ev) remove('events', ev.id); if (it.hasPhoto) delPhoto(it.id); redraw(); } });
 }
 
 // ---- barcode scanning -------------------------------------------------------------------------------------------
@@ -710,19 +716,19 @@ async function gotBarcode(code) {
   const mine = items().find(i => i.barcode === code);
   if (mine) {
     haGo('#/item/' + mine.id, { replace: screen() === 'add' });
-    haToast(`Found ${mine.name}`);
+    toast(`Found ${mine.name}`);
     openBought(mine);
     return;
   }
   if (screen() !== 'add') haGo('#/add');
   if (!S.draft) draw(route());
-  haToast('Looking up the barcode…');
+  toast('Looking up the barcode…');
   const { lookup } = await import('./scan.js');
   const p = await lookup(code);
   if (!S.draft) return;
-  if (!p) { fillDraft({ barcode: code }); haToast('Barcode saved. Type the name once and it’s known next time.'); $('#kh-form [name="name"]')?.focus(); return; }
+  if (!p) { fillDraft({ barcode: code }); toast('Barcode saved. Type the name once and it’s known next time.'); $('#kh-form [name="name"]')?.focus(); return; }
   fillDraft({ barcode: code, name: p.name, brand: p.brand, size: p.size });
-  haToast(`Found ${p.name}`);
+  toast(`Found ${p.name}`);
   if (p.image && !S.draft.pic) {
     const { fromUrl } = await import('./photo.js');
     const ph = await fromUrl(p.image);
@@ -802,10 +808,10 @@ async function openQuick() {
         onText: text => { ta.value = [before, text].filter(Boolean).join(', '); show(); },
         onEnd: err => {
           mic = null; btn.classList.remove('is-on'); btn.setAttribute('aria-pressed', 'false'); btn.lastElementChild.textContent = 'Speak';
-          if (err && err !== 'no-speech' && err !== 'aborted') haToast(/not-allowed|service/.test(err) ? 'The microphone is blocked. Allow it in the browser’s settings, or type instead.' : 'Didn’t catch that. Try again or type.');
+          if (err && err !== 'no-speech' && err !== 'aborted') toast(/not-allowed|service/.test(err) ? 'The microphone is blocked. Allow it in the browser’s settings, or type instead.' : 'Didn’t catch that. Try again or type.');
         },
       });
-    } catch { mic = null; haToast('Speech isn’t available here. Type instead.'); }
+    } catch { mic = null; toast('Speech isn’t available here. Type instead.'); }
   });
   $('#kh-quick', s.el).addEventListener('submit', async e => {
     e.preventDefault();
@@ -828,7 +834,7 @@ async function openQuick() {
     flag('said');
     await haCloseSheet(s.el);
     if (screen() === 'add') { S.draft = null; S.dirty = false; haGo('#/', { replace: true }); } else redraw();
-    haToast(`Added ${plural(picked.length, 'item')}`, { action: 'Undo', onAction: () => {
+    toast(`Added ${plural(picked.length, 'item')}`, { action: 'Undo', onAction: () => {
       for (const u of undo.reverse()) { if (u.before) save('items', u.before); else remove('items', u.id); remove('events', u.ev); }
       redraw(); haAnnounce('Undone');
     } });
@@ -860,7 +866,7 @@ const sayWho = side => [side.when, [side.by, side.device].filter(Boolean).join('
 const sayWhat = c => { const r = c.mine.value || c.theirs.value || {}; return r.name || r.title || r.text || c.id; };
 function drawConflicts() {
   const body = $('.ha-sheet-body', conflictSheet.el);
-  if (!S.conflicts.length) { const el = conflictSheet.el; conflictSheet = null; haCloseSheet(el); haToast('All chosen.'); return; }
+  if (!S.conflicts.length) { const el = conflictSheet.el; conflictSheet = null; haCloseSheet(el); toast('All chosen.'); return; }
   const side = (title, sd, text) => `<div class="kh-side"><h3>${esc(title)}</h3><p class="kh-side-v kh-break">${esc(text)}</p><p class="ha-section-footer">${esc(sayWho(sd))}</p></div>`;
   body.innerHTML = `<p class="kh-em-lead">Someone changed the same thing on another phone. Choose which to keep; nothing is lost until you do. Changes to other parts are kept either way.</p>
     <ul class="ha-list">${S.conflicts.map((c, i) => {
@@ -931,10 +937,10 @@ function shareLines() {
   return [...manual.filter(m => !m.done).map(m => m.name), ...suggested.map(b => [b.item.brand, b.item.name].filter(Boolean).join(' '))];
 }
 function addToList(it) {
-  if (onList(it.id)) { haToast('Already on the shopping list'); return; }
+  if (onList(it.id)) { toast('Already on the shopping list'); return; }
   const m = save('shop', { id: L.uid(), name: [it.brand, it.name].filter(Boolean).join(' '), itemId: it.id, done: false, at: new Date().toISOString(), by: who() });
   redraw();
-  haToast(`${it.name} is on the shopping list`, { action: 'Undo', onAction: () => { remove('shop', m.id); redraw(); } });
+  toast(`${it.name} is on the shopping list`, { action: 'Undo', onAction: () => { remove('shop', m.id); redraw(); } });
 }
 
 // ---- Settings ---------------------------------------------------------------------------------------------------
@@ -1004,6 +1010,7 @@ function viewSettings() {
       ${btnRow('sample', 'Add sample items', { iconName: 'box', sub: 'Made-up items to try the app with' })}
       ${S.mode === 'local' ? btnRow('wipe', 'Delete everything on this phone', { cls: ' ha-row--danger' }) : ''}
     </ul>`, { id: 'data' })}
+    ${section('This device', '<div id="kh-theme"></div>', { id: 'device', footer: 'Look, light or dark, and row size are kept on this phone only.' })}
     ${section('On your home screen', `<div class="ha-card kh-install"><p class="ha-card-text"><strong>iPhone:</strong> in Safari, tap Share, then Add to Home Screen.</p><p class="ha-card-text"><strong>Android:</strong> in Chrome, open the menu, then Add to home screen or Install app.</p><p class="ha-card-text">It then opens like an app and works without signal.</p></div>`, { id: 'install' })}
     ${section('About', '', { id: 'about', footer: 'Product suggestions are common Singapore supermarket goods; “keeps once opened” days are a rough guide, so check the label. Barcode look-ups use Open Food Facts. Shop links open FairPrice’s and Sheng Siong’s own search.' })}
     <div id="kh-version"></div>`;
@@ -1054,6 +1061,7 @@ function draw(r, { keep = false } = {}) {
   else if (name === 'settings') {
     main.innerHTML = viewSettings(); setBar({ title });
     showVersion($('#kh-version'));
+    mountTheme($('#kh-theme'));
   }
   document.title = name === 'home' ? 'Kaki Home' : `${title} · Kaki Home`;
   drawBadge();
@@ -1106,9 +1114,9 @@ async function onClick(e) {
     case 'quick': return openQuick();
     case 'start': return openStarter();
     case 'tour-show': return showMe(b.dataset.task);
-    case 'tour-hide': { prefs.set('tour', 'off'); redraw(); return haToast('Hidden. Settings → Help can show it again.'); }
-    case 'tour-on': { prefs.set('tour', 'on'); haGo('#/'); return haToast('The getting-started list is on Home'); }
-    case 'soon': { prefs.set('soonDays', Number(b.dataset.v)); redraw(); return haToast(`Expiring soon: within ${SOON[b.dataset.v]}`); }
+    case 'tour-hide': { prefs.set('tour', 'off'); redraw(); return toast('Hidden. Settings → Help can show it again.'); }
+    case 'tour-on': { prefs.set('tour', 'on'); haGo('#/'); return toast('The getting-started list is on Home'); }
+    case 'soon': { prefs.set('soonDays', Number(b.dataset.v)); redraw(); return toast(`Expiring soon: within ${SOON[b.dataset.v]}`); }
     case 'open': return apply(L.openOne(it, { by: who(), batchId: b.dataset.b || null }), `Opened 1 ${it.name}`);
     case 'bought': return openBought(it);
     case 'to-list': return addToList(it);
@@ -1119,7 +1127,7 @@ async function onClick(e) {
       for (const ev of evs) remove('events', ev.id);
       if (it.hasPhoto) delPhoto(it.id);
       haBack(S.originTab);
-      haToast(`${it.name} deleted`, { action: 'Undo', onAction: () => {
+      toast(`${it.name} deleted`, { action: 'Undo', onAction: () => {
         if (photo) savePhoto(it.id, it.thumb || '', photo);
         save('items', it); for (const ev of evs) save('events', ev); redraw();
       } });
@@ -1136,7 +1144,7 @@ async function onClick(e) {
       const data = sampleData(who() || 'Sample');
       for (const k of ['items', 'events']) for (const o of data[k]) save(k, o);
       redraw();
-      return haToast(`Added ${data.items.length} sample items`);
+      return toast(`Added ${data.items.length} sample items`);
     }
     case 'date': {
       const box = b.closest('.kh-dates'), input = b.closest('form').querySelector(`[name="${box.dataset.for}"]`);
@@ -1170,52 +1178,52 @@ async function onClick(e) {
       e.preventDefault();
       const m = S.shop.get(b.dataset.id);
       remove('shop', m.id); redraw();
-      return haToast(`${m.name} removed`, { action: 'Undo', onAction: () => { save('shop', m); redraw(); } });
+      return toast(`${m.name} removed`, { action: 'Undo', onAction: () => { save('shop', m); redraw(); } });
     }
     case 'shop-clear': {
       const gone = [...S.shop.values()].filter(m => m.done);
       for (const m of gone) remove('shop', m.id);
       redraw();
-      return haToast(`Cleared ${plural(gone.length, 'ticked item')}`, { action: 'Undo', onAction: () => { for (const m of gone) save('shop', m); redraw(); } });
+      return toast(`Cleared ${plural(gone.length, 'ticked item')}`, { action: 'Undo', onAction: () => { for (const m of gone) save('shop', m); redraw(); } });
     }
     case 'share': {
       const text = L.shareText(shareLines());
       if (navigator.share) { try { await navigator.share({ text }); } catch { /* cancelled */ } return; }
-      try { await navigator.clipboard.writeText(text); haToast('Copied the list. Paste it into a message.'); } catch { haToast('Couldn’t copy the list on this phone'); }
+      try { await navigator.clipboard.writeText(text); toast('Copied the list. Paste it into a message.'); } catch { toast('Couldn’t copy the list on this phone'); }
       return;
     }
     case 'csv': return download('kakihome.csv', L.toCsv(items()), 'text/csv');
     case 'backup': {
       let photos;
-      try { photos = await S.backend.list(PHOTOS); } catch (err) { return haToast(S.cloud ? S.cloud.explain(err, 'The backup') : 'The backup didn’t work. Try again.'); }
+      try { photos = await S.backend.list(PHOTOS); } catch (err) { return toast(S.cloud ? S.cloud.explain(err, 'The backup') : 'The backup didn’t work. Try again.'); }
       return download(`kakihome-backup-${today()}.json`, JSON.stringify(L.backup({ items: [...S.items.values()], events: [...S.events.values()], shop: [...S.shop.values()], photos })), 'application/json');
     }
     case 'wipe': {
-      if (!(await haConfirm({ title: 'Delete everything?', text: 'Every item, its history and the shopping list on this phone are deleted. This can’t be undone. A backup first keeps a copy.', ok: 'Delete everything', danger: true }))) return;
+      if (!(await confirmAsk({ title: 'Delete everything?', text: 'Every item, its history and the shopping list on this phone are deleted. This can’t be undone. A backup first keeps a copy.', ok: 'Delete everything', danger: true }))) return;
       await S.local.clear();
       for (const k of KINDS) S[k].clear();
       S.pics.clear();
-      redraw(); return haToast('Deleted everything on this phone');
+      redraw(); return toast('Deleted everything on this phone');
     }
     case 'signin':
-      try { await S.cloud.signIn(); } catch (err) { haToast(S.cloud.explain(err, 'Sign-in')); }
+      try { await S.cloud.signIn(); } catch (err) { toast(S.cloud.explain(err, 'Sign-in')); }
       return;
     case 'email-open': return openEmailSheet();
     case 'merge-open': return openMerge();
     case 'conflicts-open': return openConflicts();
     case 'verified': return checkVerified();
     case 'verify-resend':
-      try { await S.cloud.resendVerification(); haToast('Sent again. Check your email.'); } catch (err) { haToast(S.cloud.explain(err, 'Sending it')); }
+      try { await S.cloud.resendVerification(); toast('Sent again. Check your email.'); } catch (err) { toast(S.cloud.explain(err, 'Sending it')); }
       return;
     case 'signout': {
-      haToast('Checking everything reached the household…');
+      toast('Checking everything reached the household…');
       const ok = await S.cloud.synced(4000);
-      haHideToast();
-      if (!ok && !(await haConfirm({ title: 'Sign out now?', text: 'Some changes on this phone haven’t reached the household yet (no signal?). Signing out now loses them. Wait for signal, then sign out.', ok: 'Sign out anyway', cancel: 'Wait', danger: true }))) return;
+      hideToast();
+      if (!ok && !(await confirmAsk({ title: 'Sign out now?', text: 'Some changes on this phone haven’t reached the household yet (no signal?). Signing out now loses them. Wait for signal, then sign out.', ok: 'Sign out anyway', cancel: 'Wait', danger: true }))) return;
       try {
-        if (await S.cloud.signOut()) haToast('Signed out. This phone is back to its own list.');
-        else haToast('Some changes just arrived on this phone and haven’t reached the household yet, so you’re still signed in. Try again in a moment.');
-      } catch (err) { haToast(S.cloud.explain(err, 'Signing out')); }
+        if (await S.cloud.signOut()) toast('Signed out. This phone is back to its own list.');
+        else toast('Some changes just arrived on this phone and haven’t reached the household yet, so you’re still signed in. Try again in a moment.');
+      } catch (err) { toast(S.cloud.explain(err, 'Signing out')); }
       return;
     }
     case 'hh-create': {
@@ -1225,10 +1233,10 @@ async function onClick(e) {
         // never a second household for someone already in one: ask the server right now (offline this throws, and
         // nothing is created: the create itself also needs the server)
         const had = await locate(S.user.email);
-        if (had) { S.lookupFailed = false; await useHousehold(had); return haToast('You’re already in a household; it’s open now.'); }
+        if (had) { S.lookupFailed = false; await useHousehold(had); return toast('You’re already in a household; it’s open now.'); }
         await useHousehold(await S.cloud.createHousehold(S.user.email, 'Our home'));
-        haToast('Household started. Add its members below.');
-      } catch (err) { haToast(S.cloud.explain(err, 'Starting the household')); }
+        toast('Household started. Add its members below.');
+      } catch (err) { toast(S.cloud.explain(err, 'Starting the household')); }
       finally { S.creating = false; }
       return;
     }
@@ -1236,16 +1244,16 @@ async function onClick(e) {
       try {
         const h = await locate(S.user.email);
         S.lookupFailed = false;
-        if (!h) { redraw(); return haToast('Not added yet. Ask whoever started it to add you.'); }
+        if (!h) { redraw(); return toast('Not added yet. Ask whoever started it to add you.'); }
         await useHousehold(h);
-      } catch (err) { S.lookupFailed = true; redraw(); haToast(S.cloud.explain(err, 'Checking')); }
+      } catch (err) { S.lookupFailed = true; redraw(); toast(S.cloud.explain(err, 'Checking')); }
       return;
     }
     case 'person': return openPerson(b.dataset.v);
     case 'member-del': {
       const m = b.dataset.v;
-      if (!(await haConfirm({ title: 'Stop sharing?', text: `${m} won’t see Kaki Home any more. You can add them again later.`, ok: 'Stop sharing', danger: true }))) return;
-      try { await S.cloud.setMembers(S.household.id, S.household.members.filter(x => x !== m)); } catch (err) { haToast(S.cloud.explain(err, 'Removing them')); }
+      if (!(await confirmAsk({ title: 'Stop sharing?', text: `${m} won’t see Kaki Home any more. You can add them again later.`, ok: 'Stop sharing', danger: true }))) return;
+      try { await S.cloud.setMembers(S.household.id, S.household.members.filter(x => x !== m)); } catch (err) { toast(S.cloud.explain(err, 'Removing them')); }
       return;
     }
     case 'copy-up': {
@@ -1256,8 +1264,8 @@ async function onClick(e) {
         for (const k of KINDS) for (const o of data[k] || []) S[k].set(o.id, o);
         await S.local.clear();
         S.localCount = 0; redraw();
-        haToast(`Copied ${plural(data.items.length, 'item')} into the household`);
-      } catch (err) { haToast(S.cloud.explain(err, 'Copying')); }
+        toast(`Copied ${plural(data.items.length, 'item')} into the household`);
+      } catch (err) { toast(S.cloud.explain(err, 'Copying')); }
       return;
     }
   }
@@ -1275,7 +1283,7 @@ function download(name, text, type) {
 async function onChange(e) {
   const t = e.target;
   if (t.name === 'kh-sort') { S.sort = t.value; prefs.set('sort', t.value); return drawItemsList(); }
-  if (t.id === 'kh-name') { prefs.set('name', t.value.trim()); return haToast('Saved'); }
+  if (t.id === 'kh-name') { prefs.set('name', t.value.trim()); return toast('Saved'); }
   if (t.dataset.shop) {
     const m = S.shop.get(t.dataset.shop); if (!m) return;
     save('shop', { ...m, done: t.checked });
@@ -1285,7 +1293,7 @@ async function onChange(e) {
   }
   if (t.id === 'kh-photo-file' && t.files[0]) {
     const { pictures } = await import('./photo.js');
-    try { const p = await pictures(t.files[0]); fillDraft({ pic: p.thumb, _pics: p }); } catch { haToast('Couldn’t read that picture. Try another.'); }
+    try { const p = await pictures(t.files[0]); fillDraft({ pic: p.thumb, _pics: p }); } catch { toast('Couldn’t read that picture. Try another.'); }
     return;
   }
   if (t.id === 'kh-restore' && t.files[0]) {
@@ -1298,9 +1306,9 @@ async function onChange(e) {
         for (const k of KINDS) await S.backend.putMany(k, data[k] || []);
       } else for (const p of data.photos) S.backend.put(PHOTOS, p);
       for (const k of KINDS) for (const o of data[k] || []) { if (S.backend.putMany) S[k].set(o.id, o); else save(k, o); }
-      redraw(); haToast(`Restored ${plural(data.items.length, 'item')}`);
+      redraw(); toast(`Restored ${plural(data.items.length, 'item')}`);
       migratePhotos();
-    } catch (err) { haToast(err?.message?.startsWith('That file') ? err.message : 'Couldn’t restore that file.'); }
+    } catch (err) { toast(err?.message?.startsWith('That file') ? err.message : 'Couldn’t restore that file.'); }
     t.value = '';
   }
 }
@@ -1322,12 +1330,12 @@ async function onSubmit(e) {
   if (e.target.id === 'kh-member-add') {
     e.preventDefault();
     const v = $('#kh-member-email').value.trim().toLowerCase();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return haToast('Type their email address');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast('Type their email address');
     try {
       await S.cloud.setMembers(S.household.id, [...S.household.members, v]);
       $('#kh-member-email').value = '';
-      haToast(`Added ${v}`, { action: 'Email invite', onAction: () => { location.href = inviteHref(v); }, ms: 10000 });
-    } catch (err) { haToast(S.cloud.explain(err, 'Adding them')); }
+      toast(`Added ${v}`, { action: 'Email invite', onAction: () => { location.href = inviteHref(v); }, ms: 10000 });
+    } catch (err) { toast(S.cloud.explain(err, 'Adding them')); }
   }
 }
 
@@ -1359,19 +1367,19 @@ function openPerson(email) {
     save('settings', { id: 'people', names: next, updatedAt: new Date().toISOString() });
     await haCloseSheet(s.el);
     redraw();
-    haToast(v ? `Saved: ${v}` : 'Name removed; the email shows instead');
+    toast(v ? `Saved: ${v}` : 'Name removed; the email shows instead');
   });
   // Stop sharing from inside the sheet: confirm, then close the card
   s.el.addEventListener('click', async e => {
     const b = e.target.closest('[data-act="member-del"]'); if (!b) return;
     e.stopPropagation();
     const label = personLabel(email);
-    if (!(await haConfirm({ title: 'Stop sharing?', text: `${label} won’t see Kaki Home any more. You can add them again later.`, ok: 'Stop sharing', danger: true }))) return;
+    if (!(await confirmAsk({ title: 'Stop sharing?', text: `${label} won’t see Kaki Home any more. You can add them again later.`, ok: 'Stop sharing', danger: true }))) return;
     try {
       await S.cloud.setMembers(h.id, h.members.filter(x => x !== email));
       await haCloseSheet(s.el);
-      haToast(`Stopped sharing with ${label}`);
-    } catch (err) { haToast(S.cloud.explain(err, 'Removing them')); }
+      toast(`Stopped sharing with ${label}`);
+    } catch (err) { toast(S.cloud.explain(err, 'Removing them')); }
   }, true);
   return s;
 }
@@ -1444,9 +1452,9 @@ function mergeCard() {
 // The merge sheet: each household (name, who started it, how many people), the one with the most people chosen to keep.
 async function openMerge() {
   let all;
-  try { all = await S.cloud.findHouseholds(me()); } catch (err) { return haToast(S.cloud.explain(err, 'Looking')); }
+  try { all = await S.cloud.findHouseholds(me()); } catch (err) { return toast(S.cloud.explain(err, 'Looking')); }
   S.allHouseholds = all;
-  if (all.length < 2) { redraw(); return haToast('There’s only one household now.'); }
+  if (all.length < 2) { redraw(); return toast('There’s only one household now.'); }
   let keep = S.cloud.pickHousehold(all, '').id;
   const s = haSheet({ title: 'Merge households', closeLabel: 'Cancel', grey: true, body: '', onClose: afterSheet });
   const body = $('.ha-sheet-body', s.el);
@@ -1470,7 +1478,7 @@ async function openMerge() {
     if (!e.target.closest('[data-pm="go"]') || busy) return;
     const p = MG.plan(all, keep, me());
     if (!p.canMerge) return;
-    if (!(await haConfirm({ title: 'Merge and delete the others?', text: `${plural(p.others.length, 'other household', 'other households')} will be deleted after everything is copied into ${p.keep.name || 'Our home'}. This can’t be undone.`, ok: 'Merge', danger: true }))) return;
+    if (!(await confirmAsk({ title: 'Merge and delete the others?', text: `${plural(p.others.length, 'other household', 'other households')} will be deleted after everything is copied into ${p.keep.name || 'Our home'}. This can’t be undone.`, ok: 'Merge', danger: true }))) return;
     busy = true;
     const say = t => { const m = $('#kh-merge-msg', s.el); if (m) m.textContent = t; };
     body.querySelectorAll('button, input').forEach(b => { b.disabled = true; });
@@ -1484,7 +1492,7 @@ async function openMerge() {
       S.allHouseholds = [{ ...p.keep, members: p.members }];
       await haCloseSheet(s.el);
       redraw();
-      haToast(`Merged. One household now, with ${plural(p.members.length, 'person', 'people')}.`);
+      toast(`Merged. One household now, with ${plural(p.members.length, 'person', 'people')}.`);
     } catch (err) {
       busy = false;
       say(`${S.cloud.explain(err, 'Merging')} Nothing was lost; the households are as they were, so you can try again.`);
@@ -1518,11 +1526,11 @@ async function locate(email) {
 async function checkVerified({ quiet = false } = {}) {
   try {
     const u = await S.cloud.refreshUser();
-    if (!u) { if (!quiet) haToast('Sign in again, please.'); return; }
-    if (!u.verified) { if (!quiet) haToast('Not yet. Tap the link in the email first, then try again.'); return; }
+    if (!u) { if (!quiet) toast('Sign in again, please.'); return; }
+    if (!u.verified) { if (!quiet) toast('Not yet. Tap the link in the email first, then try again.'); return; }
     await handleUser(u);
-    haToast('Verified. You’re signed in.');
-  } catch (err) { if (!quiet) haToast(S.cloud.explain(err, 'Checking')); }
+    toast('Verified. You’re signed in.');
+  } catch (err) { if (!quiet) toast(S.cloud.explain(err, 'Checking')); }
 }
 // The one sheet for email: the address, then "Email me a sign-in link" or "Use a password" (Sign in, Create account,
 // Forgot password). `confirm` is for an emailed link opened where the address wasn't saved: just ask for it.
@@ -1579,7 +1587,7 @@ function openEmailSheet({ confirm = false, onSubmit = null } = {}) {
     create: () => run(async () => {
       await C.passwordCreate(read(), $('#kh-em-pass', body).value);
       await haCloseSheet(s.el);
-      haToast('Check your email and tap the link, then come back.');
+      toast('Check your email and tap the link, then come back.');
     }),
     forgot: () => run(async () => { await C.resetPassword(read()); step = 'reset'; draw(); }),
     finish: () => run(async () => { if (await onSubmit(read())) await haCloseSheet(s.el); }),
@@ -1604,10 +1612,10 @@ async function finishEmailLink() {
   let used = false;
   const tidy = () => { used = true; history.replaceState(history.state, '', C.stripLinkParams(href)); };
   const attempt = async email => {
-    try { await C.finishLink(email, href); tidy(); haToast('Signed in.'); return true; }
+    try { await C.finishLink(email, href); tidy(); toast('Signed in.'); return true; }
     catch (err) {
       if (err?.code === 'auth/invalid-email') throw err;   // wrong address: let them retype it
-      tidy(); haToast(C.explain(err, 'Signing in')); return true;
+      tidy(); toast(C.explain(err, 'Signing in')); return true;
     }
   };
   const saved = C.savedEmail();
@@ -1632,6 +1640,15 @@ function watchUpdates() {
 }
 // Settings: the kit's version line and "Get the latest version", with the line read from the running version
 // (the kit takes the first 'kakihome-' cache, which can be a 'kakihome-rt-' one)
+// the UI kit's switch for this device's look, theme and density (@core/theme; js/boot.js shows the choice)
+let stopTheme = null;
+async function mountTheme(el) {
+  if (!el) return;
+  const { themeSwitch } = await import('@core/theme');
+  stopTheme?.();
+  stopTheme = themeSwitch(el);
+}
+
 async function showVersion(el) {
   await haVersion(el, 'kakihome');
   const m = await updates, label = String((m && await m.versionLabel().catch(() => '')) || '').replace(/^kakihome-/, '');
@@ -1648,7 +1665,7 @@ async function start() {
     S.local = S.backend = openMemory(sampleData('Sample', { household: true }));
   } else {
     try { S.local = await openLocal(); }
-    catch { S.local = openMemory(); haToast('This browser can’t save here (private mode?). Changes last until you close it.'); }
+    catch { S.local = openMemory(); toast('This browser can’t save here (private mode?). Changes last until you close it.'); }
     S.backend = S.local;
   }
   loadInto(await S.backend.load());
