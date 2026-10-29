@@ -15,7 +15,7 @@ import {
   haRouter, haGo, haBack, haTransition, haSheet, haCloseSheet, haSheetOpen, haStepper, haVersion,
   haIcon, haEsc as esc, haAnnounce, haLargeTitle,
 } from 'https://design.flamingbeing.com/v1/app.js';
-import { confirmModal, toaster, conflictSheet as kitConflictSheet, tabBack } from '@core/ui';
+import { confirmModal, toaster, conflictSheet as kitConflictSheet, tabBack, syncButton } from '@core/ui';
 
 // Notes are the UI kit's toaster (one at a time, as before; it sits above the home tab bar through --ui-toast-bottom in
 // kakihome.css); questions are the UI kit's confirmModal.
@@ -239,6 +239,7 @@ function setBar({ title = '', lead = '', trail = '', solid = false }) {
   $('#bar-title').textContent = title;
   $('#bar-lead').innerHTML = lead;
   $('#bar-trail').innerHTML = trail;
+  if (syncBtn.isConnected || S.mode === 'cloud') $('#bar-trail').append(syncBtn);
   $('.ha-bar').classList.toggle('ha-bar--solid', solid);
 }
 const backBtn = label => `<button type="button" class="ha-bar-btn ha-back" data-act="back">${icon('chevron-left')}<span>${esc(label)}</span></button>`;
@@ -868,6 +869,14 @@ function sayValue(v) {
 const sayRecord = r => !r || typeof r !== 'object' ? sayValue(r)
   : [r.name || r.title || r.text, r.batches && sayValue(r.batches), r.location].filter(Boolean).join(' · ') || sayValue(r);
 let stopConflicts = null;
+// The kit's sync button sits at the end of the bar while the household is shared (setBar puts it back after each redraw)
+const syncBtn = Object.assign(document.createElement('button'), { type: 'button', className: 'ha-bar-btn' });
+let stopSync = null;
+function mountSync(sync) {
+  stopSync?.();
+  stopSync = sync ? syncButton(syncBtn, { sync, idPrefix: 'kh-' }) : null;
+  if (!sync) syncBtn.remove();
+}
 function mountConflicts(sync) {
   if (stopConflicts || !sync) return;
   const host = document.createElement('div'); host.id = 'kh-conflicts'; document.body.append(host);
@@ -1392,6 +1401,7 @@ async function useHousehold(h) {
     st => { if (S.backend === me) { S.sync = st; redraw(); } },
     list => { if (S.backend === me) { const had = S.conflicts.length; S.conflicts = list; if (had && !list.length) toast('All chosen.'); redraw(); } });
   mountConflicts(me.sync);
+  mountSync(me.sync);
   S.mode = 'cloud';
   S.pics.clear();
   loadInto(await S.backend.load());
@@ -1405,6 +1415,7 @@ async function useHousehold(h) {
 async function useLocal() {
   S.backend?.close?.();
   stopConflicts?.();
+  mountSync(null);
   unwatch?.(); unwatch = null;
   S.backend = S.local;
   S.mode = 'local';
