@@ -15,6 +15,10 @@
 - 28 Oct 2026: UI kit rc.29; screen content (lists, rows, sections, cards, stats, badges, chips, empty states, buttons)
   on the kit's content parts. Still on the home kit (`ha-*`): the shell (bar, large titles, tab bar), sheets and form
   fields. Before/after: `docs/m2p2-screens/cmp-*.png`.
+- 29 Oct 2026: UI kit rc.42; Back with tabs, as Android apps do it: a tab change adds at most one Back step (the kit's
+  `tabBack`), so Back on another tab goes to Kaki Home and Back there leaves the app; screens and sheets still close
+  first. Every tab change goes through `goTab` in `js/app.js`, which first steps back past screens and sheets open over
+  the tab. Tests: `back.spec.mjs`; all 54 specs green.
 
 ## Waiting on the owner
 -

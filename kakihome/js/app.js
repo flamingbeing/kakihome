@@ -12,10 +12,10 @@ import { starterChoices, tourTasks } from './tour.js';
 import * as MG from './merge.js';
 import { firebaseConfig } from '../config.js';
 import {
-  haRouter, haGo, haBack, haSheet, haCloseSheet, haSheetOpen, haStepper, haVersion,
+  haRouter, haGo, haBack, haTransition, haSheet, haCloseSheet, haSheetOpen, haStepper, haVersion,
   haIcon, haEsc as esc, haAnnounce, haLargeTitle,
 } from 'https://design.flamingbeing.com/v1/app.js';
-import { confirmModal, toaster, conflictSheet as kitConflictSheet } from '@core/ui';
+import { confirmModal, toaster, conflictSheet as kitConflictSheet, tabBack } from '@core/ui';
 
 // Notes are the UI kit's toaster (one at a time, as before; it sits above the home tab bar through --ui-toast-bottom in
 // kakihome.css); questions are the UI kit's confirmModal.
@@ -371,7 +371,7 @@ function showMe(task) {
     haGo('#/item/' + first.id);
     return spotlight('[data-act="use"]');
   }
-  if (task === 'shop') { haGo('#/shop'); return spotlight('#kh-shop-text'); }
+  if (task === 'shop') { goTab('#/shop'); return spotlight('#kh-shop-text'); }
   if (task === 'install') {
     return haSheet({
       title: 'On your home screen', closeLabel: 'Done', grey: true,
@@ -383,7 +383,7 @@ function showMe(task) {
     });
   }
   if (task === 'family') {
-    haGo('#/settings');
+    goTab('#/settings');
     return spotlight('[data-act="signin"], [data-act="hh-create"], #kh-member-email');
   }
 }
@@ -423,7 +423,7 @@ function openStarter() {
       save('items', res.item); added.push({ id: base.id, ev: save('events', res.event).id });
     }
     await haCloseSheet(s.el);
-    if (screen() !== 'home') haGo('#/', { replace: screen() === 'add' }); else redraw();
+    if (screen() !== 'home') goTab('#/'); else redraw();
     toast(`Added ${plural(added.length, 'item')}`, { action: 'Undo', onAction: () => { for (const a of added) { remove('items', a.id); remove('events', a.ev); } redraw(); haAnnounce('Undone'); } });
   });
   return s;
@@ -838,7 +838,7 @@ async function openQuick() {
     }
     flag('said');
     await haCloseSheet(s.el);
-    if (screen() === 'add') { S.draft = null; S.dirty = false; haGo('#/', { replace: true }); } else redraw();
+    if (screen() === 'add') { S.draft = null; S.dirty = false; goTab('#/'); } else redraw();
     toast(`Added ${plural(picked.length, 'item')}`, { action: 'Undo', onAction: () => {
       for (const u of undo.reverse()) { if (u.before) save('items', u.before); else remove('items', u.id); remove('events', u.ev); }
       redraw(); haAnnounce('Undone');
@@ -1008,7 +1008,7 @@ function draw(r, { keep = false } = {}) {
     if (!it) {
       // deleted (here or by the household): go back to where it was opened from, after this draw has finished
       main.innerHTML = '';
-      setTimeout(() => { if (route().parts[1] === id) haGo(S.originTab, { replace: true, nav: 'pop' }); });
+      setTimeout(() => { if (route().parts[1] === id) goTab(S.originTab, 'pop'); });
       return;
     }
   }
@@ -1092,7 +1092,7 @@ async function onClick(e) {
     case 'start': return openStarter();
     case 'tour-show': return showMe(b.dataset.task);
     case 'tour-hide': { prefs.set('tour', 'off'); redraw(); return toast('Hidden. Settings → Help can show it again.'); }
-    case 'tour-on': { prefs.set('tour', 'on'); haGo('#/'); return toast('The getting-started list is on Home'); }
+    case 'tour-on': { prefs.set('tour', 'on'); goTab('#/'); return toast('The getting-started list is on Home'); }
     case 'soon': { prefs.set('soonDays', Number(b.dataset.v)); redraw(); return toast(`Expiring soon: within ${SOON[b.dataset.v]}`); }
     case 'open': return apply(L.openOne(it, { by: who(), batchId: b.dataset.b || null }), `Opened 1 ${it.name}`);
     case 'bought': return openBought(it);
@@ -1638,7 +1638,32 @@ async function showVersion(el) {
 
 // ---- start ----------------------------------------------------------------------------------------------------
 
-let R = null;
+// Tabs, as Android apps do them (the UI kit's tabBack): a tab change adds at most one Back step, so Back on another tab
+// goes to the first tab and Back on the first tab leaves the app. A tab change first steps back past the screens and
+// sheets open over the current tab, so they never pile up under the tabs. Every tab change goes through goTab.
+let R = null, TB = null, unwound = null;
+const isTab = hash => { const p = hash.slice(1).split('?')[0].split('/').filter(Boolean); return p.length < 2 && (p[0] || 'home') in TOP; };
+function goTab(hash, nav = 'tab') {
+  const above = (history.state?.haDepth || 0) + (history.state?.haSheet ? 1 : 0);
+  if (above) { unwound = () => goTab(hash, nav); history.go(-above); return; }
+  if (hash === route().hash) return;
+  const first = hash === '#/', back = first && TB.away();
+  TB.went(first, hash);
+  if (!back) haTransition(() => { R.refresh(); scrollTo(0, 0); }, nav);   // going back, the router paints it (popstate)
+}
+// back on the tab after unwinding: carry on to the new tab without the router painting the old one first
+function onUnwound(e) {
+  if (!unwound) return;
+  const next = unwound; unwound = null;
+  e.stopImmediatePropagation();   // the kit has closed the sheets already (its listener comes first)
+  next();
+}
+function onTabLink(e) {
+  const a = e.target.closest('a[href^="#/"]');
+  if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || a.target || !isTab(a.getAttribute('href'))) return;
+  e.preventDefault();   // the router leaves it alone
+  goTab(a.getAttribute('href'));
+}
 async function start() {
   if (DEMO) {
     S.local = S.backend = openMemory(sampleData('Sample', { household: true }));
@@ -1657,10 +1682,13 @@ async function start() {
   addEventListener('offline', redraw);
   // the listener watchdog looks again when the phone comes back
   for (const [t, on] of [['online', window], ['pageshow', window], ['visibilitychange', document]]) on.addEventListener(t, () => { if (t !== 'visibilitychange' || document.visibilityState === 'visible') S.backend?.nudge?.('resume'); });
+  document.addEventListener('click', onTabLink, true);
+  addEventListener('popstate', onUnwound);   // before the router's own listener
   R = haRouter({
     render: r => draw(r),
     tabOf: r => ['item', 'edit', 'add', 'guide'].includes(r.parts[0]) ? S.originTab : r.hash,
   });
+  TB = tabBack({ history, events: window, onFirst: () => {} });   // the router paints the first tab on popstate
   // family sharing, only when a Firebase project is set up (config.js) or in the emulator tests
   if (!DEMO && (firebaseConfig || EMULATOR)) {
     try {
@@ -1705,7 +1733,7 @@ function showWelcome({ invited = false, save = true } = {}) {
       if (v === 'add') haGo('#/add');
       else if (v === 'start') openStarter();
       else if (v === 'signin') {
-        if (screen() !== 'settings') haGo('#/settings');
+        if (screen() !== 'settings') goTab('#/settings');
         requestAnimationFrame(() => $('[data-act="signin"]')?.focus());
       }
     },
