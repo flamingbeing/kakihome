@@ -99,7 +99,7 @@ npx playwright test                    # the browser specs (below); SHOTS=<dir> 
 ```
 
 The browser specs are Playwright Test (`playwright.config.mjs`, `kakihome/test/specs/`): `app` (the phone walk-through,
-split into independent tests), `welcome` (welcome, guide, first steps), `demo` (every screen at 390/360/320 px), `photos`,
+split into independent tests), `welcome` (welcome, guide, first steps), `demo` (every screen at 390/360/320 px), `back` (Back with tabs), `photos`,
 `signin` (email sign-in), `engine` (the outbox, the delete feed, the status line, sign-out) and `sync` (household sharing, photos rules, names, merging, offline: the rules in the local
 emulators, project `demo-kakihome`, fake accounts). Run one with `npx playwright test sync`; `PW_NO_EMULATOR=1` skips
 starting the emulators for the specs that don't need them (`app`, `welcome`, `demo`, `photos`).
