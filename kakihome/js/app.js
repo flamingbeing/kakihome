@@ -1618,7 +1618,7 @@ async function finishEmailLink() {
 // A new version installs in the background and takes over at once; the page reloads once (register.js). Loaded with
 // import() so a blocked core.anawj.com never stops the app; offline it comes from the saved copy (sw.js SHELL).
 
-const UPDATE = 'https://core.anawj.com/update/0.2.0/register.js';
+const UPDATE = 'https://core.anawj.com/ui/1.0.0-rc.108/update/register.js';
 let updates = null;
 // The reload after an update waits (and is tried again when the tab is hidden or shown) while someone is filling in a form,
 // a sheet is open, or changes are still being sent.

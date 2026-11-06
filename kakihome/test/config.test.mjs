@@ -47,18 +47,18 @@ assert.equal(explain({ code: 'auth/internal-error', message: 'INTERNAL ASSERTION
 const sw = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
 assert.match(sw, /const VERSION = 'kakihome-v\d+'/);
 assert.match(sw, /^const MANIFEST = \{\};$/m, 'MANIFEST stays empty in git (the deploy fills it)');
-assert.match(sw, /importScripts\('https:\/\/core\.anawj\.com\/update\/\d+\.\d+\.\d+\/sw-core\.js'\)/);
+assert.match(sw, /importScripts\('https:\/\/core\.anawj\.com\/ui\/1\.0\.0-rc\.108\/update\/sw-core\.js'\)/);
 assert.match(sw, /AppUpdate\.init\(\{\s*app: 'kakihome'/);
 assert.ok(!sw.includes("'index.html'"), 'pages are kept by the folder (./), never index.html');
 for (const f of ['tokens.css', 'app.css', 'app.js', 'icons.svg'].map(f => 'https://design.flamingbeing.com/v1/' + f)) assert.ok(sw.includes(`'${f}'`), f);
-const core = sw.match(/core\.anawj\.com\/update\/(\d+\.\d+\.\d+)\/sw-core/)[1];
-assert.ok(sw.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'register.js of the same version in SHELL');
+const core = sw.match(/core\.anawj\.com\/ui\/([^/]+)\/update\/sw-core/)[1];
+assert.ok(sw.includes(`'https://core.anawj.com/ui/${core}/update/register.js'`), 'register.js of the same version in SHELL');
 const app = fs.readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-assert.ok(app.includes(`'https://core.anawj.com/update/${core}/register.js'`), 'the page loads the same register.js');
+assert.ok(app.includes(`'https://core.anawj.com/ui/${core}/update/register.js'`), 'the page loads the same register.js');
 assert.ok(!/take-over|skipWaiting|Update ready/.test(app), 'no update toast or take-over message left');
-// exact pins, one version each: the update module 0.2.0 (the reload waits while canReload says no) and app-sync 1.4.0
+// exact pins, one version each: the update module (app-ui rc.108 /update/) (the reload waits while canReload says no) and app-sync 1.4.0
 // (the page's import map: @core/app, @core/auth, @core/sync)
-assert.equal(core, '0.2.0', 'the update module');
+assert.equal(core, '1.0.0-rc.108', 'the update module (app-update, served from app-ui rc.108)');
 assert.match(app, /register\(\{[^}]*canReload: reloadOk/, 'the reload after an update asks canReload');
 const cloud = fs.readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');

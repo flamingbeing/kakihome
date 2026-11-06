@@ -40,7 +40,7 @@ const SHELL = [
   'https://design.flamingbeing.com/v1/app.css',
   'https://design.flamingbeing.com/v1/app.js',
   'https://design.flamingbeing.com/v1/icons.svg',
-  'https://core.anawj.com/update/0.2.0/register.js',
+  'https://core.anawj.com/ui/1.0.0-rc.108/update/register.js',
   'https://core.anawj.com/sync/1.4.0/app.js',
   'https://core.anawj.com/sync/1.4.0/src/runner.js',
   'https://core.anawj.com/sync/1.4.0/auth.js',
@@ -138,13 +138,13 @@ const SHELL = [
 ];
 const MANIFEST = {};
 
-importScripts('https://core.anawj.com/update/0.2.0/sw-core.js');
+importScripts('https://core.anawj.com/ui/1.0.0-rc.108/update/sw-core.js');
 AppUpdate.init({
   app: 'kakihome', version: VERSION, shell: SHELL, manifest: MANIFEST,
   never: [/\/sw\.js$/],
   runtime: [
     { name: 'kit', match: 'https://design.flamingbeing.com/v1/', strategy: 'stale-while-revalidate', max: 40 },
-    { name: 'pinned', match: /^https:\/\/core\.anawj\.com\/(sync|update|ui)\/\d+\.\d+\.\d+\//, strategy: 'cache-first', max: 40 },
+    { name: 'pinned', match: /^https:\/\/core\.anawj\.com\/(sync|update|ui)\/\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?\//, strategy: 'cache-first', max: 40 },
     { name: 'cdn', match: /^https:\/\/(cdn|fastly)\.jsdelivr\.net\/npm\/[^/]+@\d/, strategy: 'cache-first', max: 20 },
     { name: 'files', match: url => url.origin === self.location.origin && /\.(m?js|css|json|png|svg|jpe?g|webp|ico|woff2?|webmanifest)$/i.test(url.pathname), strategy: 'stale-while-revalidate', max: 60 },
   ],
